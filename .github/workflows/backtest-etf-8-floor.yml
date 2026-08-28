@@ -1,5 +1,8 @@
 name: Backtest ETF-8 floor
 on:
+  push:
+    branches: [main]
+    paths: [requests/run-etf-8-floor.json]
   workflow_dispatch:
     inputs:
       end_date:
