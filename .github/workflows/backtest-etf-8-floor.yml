@@ -8,7 +8,7 @@ on:
       end_date:
         description: End date (YYYY-MM-DD); blank uses current IST date
         required: false
-permissions: { contents: write }
+permissions: { contents: read }
 concurrency: { group: groww-etf-research, cancel-in-progress: false }
 jobs:
   backtest:
@@ -18,17 +18,11 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with: { node-version: 22 }
-      - run: node scripts/resolve-groww-token.mjs
-        env:
-          GROWW_ACCESS_TOKEN: ${{ secrets.GROWW_ACCESS_TOKEN }}
-          GROWW_TOTP_TOKEN: ${{ secrets.GROWW_TOTP_TOKEN }}
-          GROWW_TOTP_SECRET: ${{ secrets.GROWW_TOTP_SECRET }}
       - run: npm run backtest:floor
         env:
           BACKTEST_END: ${{ inputs.end_date }}
-      - run: |
-          git config user.name github-actions[bot]
-          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
-          git add research/etf-8-floor-2y.json
-          git commit -m "Update ETF-8 floor backtest" || exit 0
-          git push
+      - uses: actions/upload-artifact@v4
+        with:
+          name: etf-8-floor-results
+          path: research/etf-8-floor-2y.json
+          retention-days: 30
