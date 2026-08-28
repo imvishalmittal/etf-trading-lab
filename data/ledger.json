@@ -1,0 +1,13 @@
+{
+  "schemaVersion": 1,
+  "mode": "PAPER_ONLY",
+  "createdAt": null,
+  "updatedAt": null,
+  "cash": 0,
+  "deposits": [],
+  "openLots": [],
+  "closedTrades": [],
+  "sessions": [],
+  "signals": [],
+  "priceHistory": {}
+}

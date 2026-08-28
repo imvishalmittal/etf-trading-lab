@@ -1,0 +1,26 @@
+{
+  "schemaVersion": 1,
+  "timezone": "Asia/Kolkata",
+  "dailyDeposit": 15000,
+  "purchaseBudget": 15000,
+  "strategies": [
+    { "id": "ETF-8", "targetPct": 8, "allocation": 0.5 },
+    { "id": "ETF-12", "targetPct": 12, "allocation": 0.5 }
+  ],
+  "entry": {
+    "decisionTime": "15:15",
+    "maximumPurchasesPerSession": 1,
+    "maximumDayReturnPct": -1,
+    "maximumPreviousCloseThirtySessionReturnPct": -2.5,
+    "minimumVolume": 500000,
+    "ranking": ["most_negative_30_session_return", "most_negative_day_return", "highest_volume"],
+    "excludeSameCategoryOnImmediatelyPreviousMarketSession": true
+  },
+  "exit": {
+    "eligibleFromNextMarketSession": true,
+    "stopLoss": null,
+    "forcedExit": null,
+    "fillPrice": "target_price_when_session_high_reaches_target"
+  },
+  "mode": "PAPER_ONLY"
+}

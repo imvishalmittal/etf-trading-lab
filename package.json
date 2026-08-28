@@ -1,0 +1,15 @@
+{
+  "name": "etf-trading-lab",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node --test",
+    "paper:buy": "node scripts/run-purchase.mjs",
+    "paper:sell": "node scripts/run-sell.mjs",
+    "state": "node scripts/build-public-state.mjs"
+  },
+  "engines": {
+    "node": ">=22"
+  }
+}
