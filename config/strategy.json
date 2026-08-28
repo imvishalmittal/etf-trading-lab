@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
   "timezone": "Asia/Kolkata",
-  "dailyDeposit": 15000,
-  "purchaseBudget": 15000,
+  "dailyDeposit": 30000,
+  "purchaseBudget": 30000,
   "strategies": [
     { "id": "ETF-8", "targetPct": 8, "allocation": 0.5 },
     { "id": "ETF-12", "targetPct": 12, "allocation": 0.5 }
