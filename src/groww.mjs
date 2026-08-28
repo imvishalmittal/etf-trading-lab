@@ -65,6 +65,8 @@ export function normalizeQuote(payload) {
 export function normalizeDailyCandles(payload) {
   return (payload.candles || []).map((c) => ({
     date: dateFromEpochIndia(c[0]),
+    open: Number(c[1]), high: Number(c[2]), low: Number(c[3]),
     close: Number(c[4]),
+    volume: Number(c[5] || 0),
   })).filter((row) => row.date && row.close > 0).sort((a, b) => a.date.localeCompare(b.date));
 }
