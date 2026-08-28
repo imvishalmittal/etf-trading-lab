@@ -1,0 +1,27 @@
+name: Paper ETF purchase
+on:
+  schedule:
+    - cron: '45 9 * * 1-5'
+  workflow_dispatch:
+permissions: { contents: write }
+concurrency: { group: etf-paper-ledger, cancel-in-progress: false }
+jobs:
+  purchase:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22 }
+      - run: node scripts/resolve-groww-token.mjs
+        env:
+          GROWW_ACCESS_TOKEN: ${{ secrets.GROWW_ACCESS_TOKEN }}
+          GROWW_TOTP_TOKEN: ${{ secrets.GROWW_TOTP_TOKEN }}
+          GROWW_TOTP_SECRET: ${{ secrets.GROWW_TOTP_SECRET }}
+      - run: npm run paper:buy && npm run state
+      - run: |
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add data/ledger.json public/state.json
+          git diff --cached --quiet || git commit -m "Record ETF paper purchase session"
+          git push
