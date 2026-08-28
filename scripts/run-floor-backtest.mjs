@@ -7,8 +7,10 @@ import { indiaParts } from '../src/time.mjs';
 
 const config = JSON.parse(fs.readFileSync('config/strategy.json', 'utf8'));
 const end = process.env.BACKTEST_END || indiaParts().date;
-const testStartDate = new Date(`${end}T00:00:00Z`); testStartDate.setUTCMonth(testStartDate.getUTCMonth() - 3);
+const testStartDate = new Date(`${end}T00:00:00Z`); testStartDate.setUTCMonth(testStartDate.getUTCMonth() - 24);
 const testStart = testStartDate.toISOString().slice(0, 10);
+const recentStartDate = new Date(`${end}T00:00:00Z`); recentStartDate.setUTCMonth(recentStartDate.getUTCMonth() - 3);
+const recentStart = recentStartDate.toISOString().slice(0, 10);
 const warmupDate = new Date(`${testStart}T00:00:00Z`); warmupDate.setUTCDate(warmupDate.getUTCDate() - 75);
 const warmupStart = warmupDate.toISOString().slice(0, 10);
 const client = createGrowwClient(process.env.GROWW_ACCESS_TOKEN);
@@ -35,7 +37,9 @@ const sessions = dates.map((date, dateIndex) => {
   return { date, previousDate: dates[dateIndex - 1] || null, candidates, candles };
 });
 const result = runFloorBacktest({ sessions, dailyFunding: 15000, floorPct: 8, minimumVolume: config.entry.minimumVolume });
-const report = { strategy: 'ETF-8-FLOOR', period: { start: dates[0], end: dates.at(-1), marketSessions: dates.length }, priceModel: 'daily OHLC; entry at session close; +8% floor activates from next session', generatedAt: new Date().toISOString(), ...result };
+const recentSessions = sessions.filter((session) => session.date >= recentStart);
+const recent = runFloorBacktest({ sessions: recentSessions, dailyFunding: 15000, floorPct: 8, minimumVolume: config.entry.minimumVolume });
+const report = { strategy: 'ETF-8-FLOOR', period: { start: dates[0], end: dates.at(-1), marketSessions: dates.length }, recentPeriod: { start: recentSessions[0]?.date, end: recentSessions.at(-1)?.date, marketSessions: recentSessions.length }, priceModel: 'daily OHLC; entry at session close; +8% floor activates from next session', generatedAt: new Date().toISOString(), full24Months: result, recent3Months: recent };
 fs.mkdirSync('research', { recursive: true });
-fs.writeFileSync('research/etf-8-floor-3m.json', `${JSON.stringify(report, null, 2)}\n`);
-console.log(JSON.stringify({ period: report.period, deposits: result.totalDeposits, purchases: result.purchases, closedTrades: result.closedTrades.length, openLots: result.openLots.length, accountValue: result.accountValue, profit: result.profit, xirrPct: result.xirrPct }, null, 2));
+fs.writeFileSync('research/etf-8-floor-2y.json', `${JSON.stringify(report, null, 2)}\n`);
+console.log(JSON.stringify({ period: report.period, full24Months: { deposits: result.totalDeposits, purchases: result.purchases, closedTrades: result.closedTrades.length, openLots: result.openLots.length, accountValue: result.accountValue, profit: result.profit, xirrPct: result.xirrPct }, recent3Months: { deposits: recent.totalDeposits, purchases: recent.purchases, closedTrades: recent.closedTrades.length, openLots: recent.openLots.length, accountValue: recent.accountValue, profit: recent.profit, xirrPct: recent.xirrPct } }, null, 2));
