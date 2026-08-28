@@ -1,5 +1,8 @@
 name: Backtest ETF-8 floor
 on:
+  push:
+    branches: [main]
+    paths: [requests/run-etf-8-floor.json]
   workflow_dispatch:
     inputs:
       end_date:
@@ -26,6 +29,6 @@ jobs:
       - run: |
           git config user.name github-actions[bot]
           git config user.email 41898282+github-actions[bot]@users.noreply.github.com
-          git add research/etf-8-floor-3m.json
+          git add research/etf-8-floor-2y.json
           git commit -m "Update ETF-8 floor backtest" || exit 0
           git push

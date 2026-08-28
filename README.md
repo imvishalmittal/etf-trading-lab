@@ -26,4 +26,4 @@ Broker-data workflows will require repository secrets `GROWW_TOTP_TOKEN` and `GR
 
 ## ETF-8-FLOOR research
 
-This isolated three-month backtest funds ₹15,000 per market session. A lot is not sold when it first reaches +8%; that price becomes a fixed floor from the next session. The lot exits only if a later session falls back to that floor. Unsold lots are marked to the final close for account value and XIRR.
+This isolated two-year backtest, with a separate recent-three-month view, funds ₹15,000 per market session. A lot is not sold when it first reaches +8%; that price becomes a fixed floor from the next session. The lot exits only if a later session falls back to that floor. Unsold lots are marked to the final close for account value and XIRR.
