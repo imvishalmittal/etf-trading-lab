@@ -182,6 +182,85 @@ function replay({ sessions, entries, start, end, floorPct, trailingGapPct = null
   return { start, end, ticket: TICKET, purchases: periodEntries.length, freshFunding, cash, holdingsValue, accountValue, profit: round(accountValue - freshFunding), realizedProfit: round(closedTrades.reduce((sum, trade) => sum + trade.profit, 0)), totalReturnPct: freshFunding ? round((accountValue / freshFunding - 1) * 100, 4) : null, xirrPct: Number.isFinite(rate) ? round(rate * 100, 4) : null, floorExits: closedTrades.length, gapExits: closedTrades.filter((trade) => trade.exitReason === 'FLOOR_GAP').length, armedOpenLots: openLots.filter((lot) => lot.floorArmed).length, unarmedOpenLots: openLots.filter((lot) => !lot.floorArmed).length, deposits, closedTrades, openLots };
 }
 
+const daysBetween = (from, to) => Math.floor((new Date(`${to}T00:00:00Z`) - new Date(`${from}T00:00:00Z`)) / 86400000);
+function addMonths(date, months) {
+  const value = new Date(`${date}T00:00:00Z`);
+  value.setUTCMonth(value.getUTCMonth() + months);
+  return value.toISOString().slice(0, 10);
+}
+
+function replayConstrained({ sessions, entries, start, end, floorPct = 8, fundingMonths = 3, delayedTrailStartPct = null, trailingGapPct = null, maxUnarmedDays = null, commodityCapPct = null, roundTripCostPct = 0 }) {
+  const fundingEnd = addMonths(start, fundingMonths);
+  const sideCostRate = roundTripCostPct / 200;
+  const periodEntries = entries.filter((entry) => entry.date >= start && entry.date <= end);
+  const entryByDate = new Map(periodEntries.map((entry) => [entry.date, entry]));
+  let cash = 0, totalCosts = 0, priorEquity = 0, returnIndex = 1, peakReturnIndex = 1, maxDrawdownPct = 0;
+  let maxOpenLots = 0, peakDeployedCost = 0, peakHoldingsValue = 0;
+  const deposits = [], openLots = [], closedTrades = [], skippedSignals = [];
+  const sellLot = (lot, session, sellPrice, exitReason) => {
+    const grossSellValue = round(lot.quantity * sellPrice);
+    const sellCost = round(grossSellValue * sideCostRate);
+    const netSellValue = round(grossSellValue - sellCost);
+    totalCosts = round(totalCosts + sellCost); cash = round(cash + netSellValue);
+    closedTrades.push({ ...lot, sellDate: session.date, sellPrice, grossSellValue, sellCost, sellValue: netSellValue, profit: round(netSellValue - lot.purchaseValue - lot.buyCost), returnPct: round((netSellValue / (lot.purchaseValue + lot.buyCost) - 1) * 100, 4), maxAchievedReturnPct: round((lot.peakPrice / lot.entryPrice - 1) * 100, 4), exitReason });
+  };
+  for (const session of sessions.filter((row) => row.date >= start && row.date <= end)) {
+    let contributionToday = 0;
+    for (let i = openLots.length - 1; i >= 0; i -= 1) {
+      const lot = openLots[i], candle = session.prices[lot.symbol];
+      if (!candle) continue;
+      lot.lastPrice = candle.close; lot.lastDate = session.date;
+      if (lot.floorArmed && session.date > lot.armedDate && candle.low <= lot.floorPrice) {
+        const sellPrice = round(candle.open < lot.floorPrice ? candle.open : lot.floorPrice, 4);
+        sellLot(lot, session, sellPrice, candle.open < lot.floorPrice ? 'FLOOR_GAP' : 'FLOOR'); openLots.splice(i, 1); continue;
+      }
+      if (candle.high > lot.peakPrice) { lot.peakPrice = candle.high; lot.peakDate = session.date; }
+      if (!lot.floorArmed && candle.high >= lot.activationPrice) { lot.floorArmed = true; lot.armedDate = session.date; }
+      const peakReturnPct = (lot.peakPrice / lot.entryPrice - 1) * 100;
+      if (lot.floorArmed && delayedTrailStartPct !== null && peakReturnPct >= delayedTrailStartPct) {
+        lot.floorPrice = Math.max(lot.floorPrice, trailingFloorPrice({ entryPrice: lot.entryPrice, peakPrice: lot.peakPrice, minimumFloorPct: floorPct, trailingGapPct }));
+      }
+      if (!lot.floorArmed && maxUnarmedDays !== null && daysBetween(lot.date, session.date) >= maxUnarmedDays) {
+        sellLot(lot, session, candle.close, 'UNARMED_TIME_RELEASE'); openLots.splice(i, 1);
+      }
+    }
+    const entry = entryByDate.get(session.date);
+    if (entry) {
+      const quantity = Math.floor(TICKET / entry.entryPrice);
+      const purchaseValue = round(quantity * entry.entryPrice), buyCost = round(purchaseValue * sideCostRate), cashRequired = round(purchaseValue + buyCost);
+      const commodity = ['GOLD', 'SILVER'].includes(entry.category);
+      const currentCost = openLots.reduce((sum, lot) => sum + lot.purchaseValue, 0);
+      const currentCommodityCost = openLots.filter((lot) => ['GOLD', 'SILVER'].includes(lot.category)).reduce((sum, lot) => sum + lot.purchaseValue, 0);
+      const projectedCommodityPct = commodity ? ((currentCommodityCost + purchaseValue) / (currentCost + purchaseValue)) * 100 : currentCost ? (currentCommodityCost / (currentCost + purchaseValue)) * 100 : 0;
+      if (commodityCapPct !== null && projectedCommodityPct > commodityCapPct) skippedSignals.push({ date: session.date, symbol: entry.symbol, reason: 'COMMODITY_CAP' });
+      else {
+        const shortfall = round(Math.max(0, cashRequired - cash));
+        if (shortfall > 0 && session.date > fundingEnd) skippedSignals.push({ date: session.date, symbol: entry.symbol, reason: 'NO_CASH_AFTER_FUNDING_WINDOW', shortfall });
+        else if (quantity < 1) skippedSignals.push({ date: session.date, symbol: entry.symbol, reason: 'TICKET_BELOW_UNIT_PRICE' });
+        else {
+          if (shortfall > 0) { cash = round(cash + shortfall); contributionToday = shortfall; deposits.push({ date: session.date, amount: shortfall }); }
+          cash = round(cash - cashRequired); totalCosts = round(totalCosts + buyCost);
+          openLots.push({ ...entry, quantity, purchaseValue, buyCost, floorPct, activationPrice: round(entry.entryPrice * (1 + floorPct / 100), 4), floorPrice: round(entry.entryPrice * (1 + floorPct / 100), 4), floorArmed: false, armedDate: null, peakPrice: entry.entryPrice, peakDate: entry.date, lastPrice: entry.entryPrice, lastDate: entry.date });
+        }
+      }
+    }
+    const holdingsValue = openLots.reduce((sum, lot) => sum + lot.quantity * lot.lastPrice, 0), equity = cash + holdingsValue;
+    maxOpenLots = Math.max(maxOpenLots, openLots.length);
+    peakDeployedCost = Math.max(peakDeployedCost, openLots.reduce((sum, lot) => sum + lot.purchaseValue + lot.buyCost, 0));
+    peakHoldingsValue = Math.max(peakHoldingsValue, holdingsValue);
+    if (priorEquity > 0) returnIndex *= Math.max(0, equity - contributionToday) / priorEquity;
+    peakReturnIndex = Math.max(peakReturnIndex, returnIndex);
+    maxDrawdownPct = Math.min(maxDrawdownPct, (returnIndex / peakReturnIndex - 1) * 100);
+    priorEquity = equity;
+  }
+  const holdingsValue = round(openLots.reduce((sum, lot) => sum + lot.quantity * lot.lastPrice * (1 - sideCostRate), 0));
+  const accountValue = round(cash + holdingsValue), freshFunding = round(deposits.reduce((sum, row) => sum + row.amount, 0));
+  const flows = deposits.map((row) => ({ date: row.date, amount: -row.amount })); if (freshFunding) flows.push({ date: end, amount: accountValue });
+  const rate = freshFunding ? xirr(flows) : null;
+  const skippedByReason = Object.fromEntries([...new Set(skippedSignals.map((row) => row.reason))].map((reason) => [reason, skippedSignals.filter((row) => row.reason === reason).length]));
+  return { floorPct, fundingMonths, fundingEnd, delayedTrailStartPct, trailingGapPct, maxUnarmedDays, commodityCapPct, roundTripCostPct, signals: periodEntries.length, purchases: closedTrades.length + openLots.length, skippedSignals: skippedSignals.length, skippedByReason, freshFunding, accountValue, profit: round(accountValue - freshFunding), realizedProfit: round(closedTrades.reduce((sum, row) => sum + row.profit, 0)), totalReturnPct: freshFunding ? round((accountValue / freshFunding - 1) * 100, 4) : null, xirrPct: Number.isFinite(rate) ? round(rate * 100, 4) : null, totalCosts, maxDrawdownPct: round(maxDrawdownPct, 4), maxOpenLots, peakDeployedCost: round(peakDeployedCost), peakHoldingsValue: round(peakHoldingsValue), exits: closedTrades.length, gapExits: closedTrades.filter((row) => row.exitReason === 'FLOOR_GAP').length, timeReleaseExits: closedTrades.filter((row) => row.exitReason === 'UNARMED_TIME_RELEASE').length, armedOpenLots: openLots.filter((row) => row.floorArmed).length, unarmedOpenLots: openLots.filter((row) => !row.floorArmed).length };
+}
+
 const seed = parseSimpleCsv('research/etf-universe-2021.csv');
 const current = await fetchCurrentEtfs();
 const frozen = [1, 2, 3, 4].flatMap((part) => fs.readFileSync(`research/frozen-entries-${part}.csv`, 'utf8').trim().split(/\r?\n/).slice(1)).map((line) => {
@@ -202,6 +281,27 @@ const generated = generateEntries(sessions, universe, discontinuities);
 if (generated.entries.length < 100) throw new Error(`Five-year signal integrity failed: only ${generated.entries.length} purchases`);
 const variants = Object.fromEntries(FLOOR_PCTS.map((floorPct) => [String(floorPct), replay({ sessions, entries: generated.entries, start: START, end: END, floorPct })]));
 const trailingVariants = Object.fromEntries(TRAILING_GAPS.map((trailingGapPct) => [`8_floor_${trailingGapPct}pt_trail`, replay({ sessions, entries: generated.entries, start: START, end: END, floorPct: 8, trailingGapPct })]));
+const constrained = {
+  fixed8: replayConstrained({ sessions, entries: generated.entries, start: START, end: END }),
+  delayedTrail15Gap5: replayConstrained({ sessions, entries: generated.entries, start: START, end: END, delayedTrailStartPct: 15, trailingGapPct: 5 }),
+  delayedTrail20Gap5: replayConstrained({ sessions, entries: generated.entries, start: START, end: END, delayedTrailStartPct: 20, trailingGapPct: 5 }),
+};
+const releaseRules = Object.fromEntries([[9, 274], [12, 365], [18, 548]].map(([months, days]) => [`${months}m`, replayConstrained({ sessions, entries: generated.entries, start: START, end: END, maxUnarmedDays: days })]));
+const commodityCap = replayConstrained({ sessions, entries: generated.entries, start: START, end: END, commodityCapPct: 25 });
+const costSensitivity = Object.fromEntries([0.25, 0.5].flatMap((roundTripCostPct) => [
+  [`fixed8_cost_${roundTripCostPct}`, replayConstrained({ sessions, entries: generated.entries, start: START, end: END, roundTripCostPct })],
+  [`delayed15_cost_${roundTripCostPct}`, replayConstrained({ sessions, entries: generated.entries, start: START, end: END, delayedTrailStartPct: 15, trailingGapPct: 5, roundTripCostPct })],
+  [`delayed20_cost_${roundTripCostPct}`, replayConstrained({ sessions, entries: generated.entries, start: START, end: END, delayedTrailStartPct: 20, trailingGapPct: 5, roundTripCostPct })],
+]));
+const exclusionUniverses = {
+  exGold: universe.filter((row) => row.category !== 'GOLD'),
+  exSilver: universe.filter((row) => row.category !== 'SILVER'),
+  exGoldSilver: universe.filter((row) => !['GOLD', 'SILVER'].includes(row.category)),
+};
+const exclusionSensitivity = Object.fromEntries(Object.entries(exclusionUniverses).map(([name, reducedUniverse]) => {
+  const reduced = generateEntries(sessions, reducedUniverse, discontinuities);
+  return [name, { entries: reduced.entries.length, diagnostics: reduced.diagnostics, result: replayConstrained({ sessions, entries: reduced.entries, start: START, end: END }) }];
+}));
 for (const [floorPct, result] of Object.entries(variants)) {
   if (result.closedTrades.some((trade) => trade.maxAchievedReturnPct < Number(floorPct))) throw new Error(`Peak-return integrity failed for ${floorPct}% floor`);
 }
@@ -221,8 +321,16 @@ const report = {
   trailingRules: { minimumFloorPct: 8, gapPcts: TRAILING_GAPS, updateTiming: 'The floor carried into a session is tested first; a surviving session high can raise the floor only for a later session.' },
   variants,
   trailingVariants,
+  robustness: {
+    note: 'Fresh contributions are allowed only for qualifying purchases during the first three calendar months; later signals require recycled cash.',
+    constrained,
+    releaseRules,
+    commodityCap,
+    costSensitivity,
+    exclusionSensitivity,
+  },
   generatedAt: new Date().toISOString(),
 };
 fs.writeFileSync('research/etf-floor-comparison-5y.json', `${JSON.stringify(report, null, 2)}\n`);
 const summary = (result) => Object.fromEntries(['purchases', 'freshFunding', 'accountValue', 'profit', 'realizedProfit', 'totalReturnPct', 'xirrPct', 'floorExits', 'gapExits', 'armedOpenLots', 'unarmedOpenLots'].map((key) => [key, result[key]]));
-console.log(JSON.stringify({ period: report.period, sessions: sessions.length, universe: report.universe, entries: generated.entries.length, diagnostics: generated.diagnostics, variants: Object.fromEntries(Object.entries(variants).map(([floorPct, result]) => [floorPct, summary(result)])), trailingVariants: Object.fromEntries(Object.entries(trailingVariants).map(([name, result]) => [name, summary(result)])) }, null, 2));
+console.log(JSON.stringify({ period: report.period, sessions: sessions.length, universe: report.universe, entries: generated.entries.length, diagnostics: generated.diagnostics, variants: Object.fromEntries(Object.entries(variants).map(([floorPct, result]) => [floorPct, summary(result)])), trailingVariants: Object.fromEntries(Object.entries(trailingVariants).map(([name, result]) => [name, summary(result)])), robustness: report.robustness }, null, 2));
