@@ -1,9 +1,13 @@
 {
   "requestedAt": "2026-08-29T02:00:00Z",
-  "strategy": "ETF-FIXED-FLOOR-5Y",
+  "strategy": "ETF-FLOOR-AND-TRAILING-FLOOR-5Y",
   "startDate": "2021-08-28",
   "endDate": "2026-08-27",
   "floorActivationPcts": [8, 10, 12, 15, 20],
+  "trailingFloorVariants": [
+    { "minimumFloorPct": 8, "trailingGapPct": 3 },
+    { "minimumFloorPct": 8, "trailingGapPct": 5 }
+  ],
   "ticket": 15000,
-  "requestRevision": 1
+  "requestRevision": 2
 }
