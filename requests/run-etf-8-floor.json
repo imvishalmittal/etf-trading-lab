@@ -1,10 +1,10 @@
 {
-  "requestedAt": "2026-08-29T01:15:00Z",
-  "strategy": "ETF-8-FLOOR",
+  "requestedAt": "2026-08-29T01:35:00Z",
+  "strategy": "ETF-FIXED-FLOOR-COMPARISON",
   "periodMonths": 24,
   "alsoReportRecentMonths": 3,
   "dailyFunding": 15000,
-  "floorActivationPct": 8,
+  "floorActivationPcts": [8, 10, 12, 15, 20],
   "source": "official-nse-daily-ohlc",
-  "requestRevision": 4
+  "requestRevision": 5
 }
