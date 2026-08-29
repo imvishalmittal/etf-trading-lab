@@ -11,11 +11,12 @@
   "ticket": 15000,
   "robustness": {
     "fundingMonths": 3,
+    "dailyMarketSessionDeposit": 15000,
     "delayedTrailing": [{ "startPct": 15, "gapPct": 5 }, { "startPct": 20, "gapPct": 5 }],
     "unarmedReleaseMonths": [9, 12, 18],
     "commodityCapPct": 25,
     "roundTripCostPcts": [0.25, 0.5],
     "exclusionTests": ["gold", "silver", "gold_and_silver"]
   },
-  "requestRevision": 3
+  "requestRevision": 4
 }

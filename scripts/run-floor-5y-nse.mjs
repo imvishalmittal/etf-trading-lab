@@ -206,6 +206,11 @@ function replayConstrained({ sessions, entries, start, end, floorPct = 8, fundin
   };
   for (const session of sessions.filter((row) => row.date >= start && row.date <= end)) {
     let contributionToday = 0;
+    if (session.date <= fundingEnd) {
+      contributionToday = TICKET;
+      cash = round(cash + contributionToday);
+      deposits.push({ date: session.date, amount: contributionToday });
+    }
     for (let i = openLots.length - 1; i >= 0; i -= 1) {
       const lot = openLots[i], candle = session.prices[lot.symbol];
       if (!candle) continue;
@@ -226,7 +231,7 @@ function replayConstrained({ sessions, entries, start, end, floorPct = 8, fundin
     }
     const entry = entryByDate.get(session.date);
     if (entry) {
-      const quantity = Math.floor(TICKET / entry.entryPrice);
+      const quantity = Math.floor(TICKET / (entry.entryPrice * (1 + sideCostRate)));
       const purchaseValue = round(quantity * entry.entryPrice), buyCost = round(purchaseValue * sideCostRate), cashRequired = round(purchaseValue + buyCost);
       const commodity = ['GOLD', 'SILVER'].includes(entry.category);
       const currentCost = openLots.reduce((sum, lot) => sum + lot.purchaseValue, 0);
@@ -235,10 +240,9 @@ function replayConstrained({ sessions, entries, start, end, floorPct = 8, fundin
       if (commodityCapPct !== null && projectedCommodityPct > commodityCapPct) skippedSignals.push({ date: session.date, symbol: entry.symbol, reason: 'COMMODITY_CAP' });
       else {
         const shortfall = round(Math.max(0, cashRequired - cash));
-        if (shortfall > 0 && session.date > fundingEnd) skippedSignals.push({ date: session.date, symbol: entry.symbol, reason: 'NO_CASH_AFTER_FUNDING_WINDOW', shortfall });
+        if (shortfall > 0) skippedSignals.push({ date: session.date, symbol: entry.symbol, reason: session.date > fundingEnd ? 'NO_CASH_AFTER_FUNDING_WINDOW' : 'INSUFFICIENT_ACCUMULATED_CASH', shortfall });
         else if (quantity < 1) skippedSignals.push({ date: session.date, symbol: entry.symbol, reason: 'TICKET_BELOW_UNIT_PRICE' });
         else {
-          if (shortfall > 0) { cash = round(cash + shortfall); contributionToday = shortfall; deposits.push({ date: session.date, amount: shortfall }); }
           cash = round(cash - cashRequired); totalCosts = round(totalCosts + buyCost);
           openLots.push({ ...entry, quantity, purchaseValue, buyCost, floorPct, activationPrice: round(entry.entryPrice * (1 + floorPct / 100), 4), floorPrice: round(entry.entryPrice * (1 + floorPct / 100), 4), floorArmed: false, armedDate: null, peakPrice: entry.entryPrice, peakDate: entry.date, lastPrice: entry.entryPrice, lastDate: entry.date });
         }
@@ -322,7 +326,7 @@ const report = {
   variants,
   trailingVariants,
   robustness: {
-    note: 'Fresh contributions are allowed only for qualifying purchases during the first three calendar months; later signals require recycled cash.',
+    note: '₹15,000 is deposited on every market session during the first three calendar months, whether or not there is a signal; later purchases use recycled cash only.',
     constrained,
     releaseRules,
     commodityCap,
