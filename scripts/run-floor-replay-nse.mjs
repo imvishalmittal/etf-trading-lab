@@ -1,11 +1,15 @@
 import fs from 'node:fs';
 import { xirr } from '../src/xirr.mjs';
 
-const entryText = [1, 2, 3, 4].flatMap((part) => fs.readFileSync(`research/frozen-entries-${part}.csv`, 'utf8').trim().split(/\\r?\\n/).slice(1));
+const entryText = [1, 2, 3, 4].flatMap((part) => fs.readFileSync(`research/frozen-entries-${part}.csv`, 'utf8').trim().split(/\r?\n/).slice(1));
 const entries = entryText.map((line) => {
   const [trade, date, symbol, category, entryPrice] = line.split(',');
   return { trade: Number(trade), date, symbol, category, entryPrice: Number(entryPrice) };
 });
+if (entries.length !== 235) throw new Error(`Frozen-entry integrity failed: expected 235 entries, parsed ${entries.length}`);
+if (entries.some((entry) => !entry.trade || !/^\d{4}-\d{2}-\d{2}$/.test(entry.date) || !entry.symbol || !Number.isFinite(entry.entryPrice))) {
+  throw new Error('Frozen-entry integrity failed: one or more entries are malformed');
+}
 const END = process.env.BACKTEST_END || '2026-08-27';
 const round = (v, n = 2) => Number(Number(v || 0).toFixed(n));
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
@@ -102,6 +106,7 @@ function replay({ allSessions, allEntries, start, end, ticket = 15000, floorPct 
 
 const fullStart = '2024-08-28', recentStart = '2026-05-27';
 const relevant = entries.filter((e) => e.date >= fullStart && e.date <= END);
+if (relevant.length < 100) throw new Error(`Frozen-entry period integrity failed: expected at least 100 entries, found ${relevant.length}`);
 const wanted = new Set(relevant.map((e) => e.symbol));
 const sessions = await fetchSessions(fullStart, END, wanted);
 if (sessions.length < 450) throw new Error(`NSE daily-data completeness failed: only ${sessions.length} sessions`);
