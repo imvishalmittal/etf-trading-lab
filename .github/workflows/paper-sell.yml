@@ -1,26 +1,8 @@
-name: Paper ETF target check
-on:
-  schedule:
-    - cron: '50 9 * * 1-5'
-  workflow_dispatch:
-permissions: { contents: write }
-concurrency: { group: etf-paper-ledger, cancel-in-progress: false }
+name: RETIRED - Paper ETF floor check
+on: workflow_dispatch
+permissions: { contents: read }
 jobs:
-  sell:
+  retired:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with: { node-version: 22 }
-      - run: node scripts/resolve-groww-token.mjs
-        env:
-          GROWW_ACCESS_TOKEN: ${{ secrets.GROWW_ACCESS_TOKEN }}
-          GROWW_TOTP_TOKEN: ${{ secrets.GROWW_TOTP_TOKEN }}
-          GROWW_TOTP_SECRET: ${{ secrets.GROWW_TOTP_SECRET }}
-      - run: npm run paper:sell && npm run state
-      - run: |
-          git config user.name github-actions[bot]
-          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
-          git add data/ledger.json public/state.json
-          git diff --cached --quiet || git commit -m "Record ETF target check"
-          git push
+      - run: echo "RESEARCH_REJECTED — ETF paper floor checks are permanently disabled."
