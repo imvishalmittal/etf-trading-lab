@@ -1,0 +1,28 @@
+name: Backtest ETF floors 5Y
+on:
+  push:
+    branches: [main]
+    paths: [requests/run-etf-floors-5y.json]
+  workflow_dispatch:
+    inputs:
+      end_date:
+        description: End date (YYYY-MM-DD)
+        required: false
+permissions: { contents: read }
+concurrency: { group: groww-etf-research, cancel-in-progress: false }
+jobs:
+  backtest:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22 }
+      - run: node scripts/run-floor-5y-nse.mjs
+        env:
+          BACKTEST_END: ${{ inputs.end_date }}
+      - uses: actions/upload-artifact@v4
+        with:
+          name: etf-floor-5y-results
+          path: research/etf-floor-comparison-5y.json
+          retention-days: 30
