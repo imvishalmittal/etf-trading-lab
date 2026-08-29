@@ -1,4 +1,4 @@
-name: Backtest ETF-8 floor
+name: Compare ETF fixed floors
 on:
   push:
     branches: [main]
@@ -23,6 +23,6 @@ jobs:
           BACKTEST_END: ${{ inputs.end_date }}
       - uses: actions/upload-artifact@v4
         with:
-          name: etf-8-floor-results
-          path: research/etf-8-floor-2y.json
+          name: etf-floor-comparison-results
+          path: research/etf-floor-comparison-2y.json
           retention-days: 30
