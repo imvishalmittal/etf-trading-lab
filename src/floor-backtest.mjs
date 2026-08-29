@@ -3,6 +3,12 @@ import { xirr } from './xirr.mjs';
 
 const round = (v, n = 2) => Number(Number(v || 0).toFixed(n));
 
+export function trailingFloorPrice({ entryPrice, peakPrice, minimumFloorPct = 8, trailingGapPct }) {
+  const peakReturnPct = (peakPrice / entryPrice - 1) * 100;
+  const protectedReturnPct = Math.max(minimumFloorPct, peakReturnPct - trailingGapPct);
+  return round(entryPrice * (1 + protectedReturnPct / 100), 4);
+}
+
 export function runFloorBacktest({ sessions, dailyFunding = 15000, floorPct = 8, minimumVolume = 500000 }) {
   let cash = 0; let previousCategory = null; let id = 0;
   const deposits = [], openLots = [], closedTrades = [], signals = [];
