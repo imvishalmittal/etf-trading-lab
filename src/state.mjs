@@ -27,7 +27,7 @@ export function buildPublicState(ledger, asOf = indiaParts().date) {
     schemaVersion: 1,
     generatedAt: new Date().toISOString(),
     asOf,
-    mode: 'PAPER_ONLY',
+    mode: 'RESEARCH_REJECTED',
     summary: {
       totalDeposits, cash: round(ledger.cash), invested, dematValue, accountValue,
       profit: round(accountValue - totalDeposits),
