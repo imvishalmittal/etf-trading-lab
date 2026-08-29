@@ -1,11 +1,13 @@
 import fs from 'node:fs';
 import { classifyEtf } from '../src/categories.mjs';
+import { trailingFloorPrice } from '../src/floor-backtest.mjs';
 import { xirr } from '../src/xirr.mjs';
 
 const START = '2021-08-28';
 const HISTORY_START = '2021-06-01';
 const END = process.env.BACKTEST_END || '2026-08-27';
 const FLOOR_PCTS = [8, 10, 12, 15, 20];
+const TRAILING_GAPS = [3, 5];
 const TICKET = 15000;
 const round = (v, n = 2) => Number(Number(v || 0).toFixed(n));
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
@@ -139,7 +141,7 @@ function generateEntries(sessions, universe, excludedSymbols) {
   return { entries, diagnostics };
 }
 
-function replay({ sessions, entries, start, end, floorPct }) {
+function replay({ sessions, entries, start, end, floorPct, trailingGapPct = null }) {
   const periodEntries = entries.filter((entry) => entry.date >= start && entry.date <= end);
   const entryByDate = new Map();
   for (const entry of periodEntries) (entryByDate.get(entry.date) || entryByDate.set(entry.date, []).get(entry.date)).push(entry);
@@ -157,6 +159,10 @@ function replay({ sessions, entries, start, end, floorPct }) {
       } else {
         if (candle.high > lot.peakPrice) { lot.peakPrice = candle.high; lot.peakDate = session.date; }
         if (!lot.floorArmed && candle.high >= lot.floorPrice) { lot.floorArmed = true; lot.armedDate = session.date; }
+        if (lot.floorArmed && trailingGapPct !== null) {
+          lot.floorPrice = trailingFloorPrice({ entryPrice: lot.entryPrice, peakPrice: lot.peakPrice, minimumFloorPct: floorPct, trailingGapPct });
+          lot.protectedReturnPct = round((lot.floorPrice / lot.entryPrice - 1) * 100, 4);
+        }
       }
     }
     for (const entry of entryByDate.get(session.date) || []) {
@@ -165,7 +171,7 @@ function replay({ sessions, entries, start, end, floorPct }) {
       const contribution = round(Math.max(0, purchaseValue - cash));
       if (contribution > 0) { cash = round(cash + contribution); deposits.push({ date: session.date, amount: contribution }); }
       cash = round(cash - purchaseValue);
-      openLots.push({ ...entry, quantity, purchaseValue, floorPrice: round(entry.entryPrice * (1 + floorPct / 100), 4), floorArmed: false, armedDate: null, peakPrice: entry.entryPrice, peakDate: entry.date, lastPrice: entry.entryPrice, lastDate: entry.date });
+      openLots.push({ ...entry, quantity, purchaseValue, floorPct, trailingGapPct, floorPrice: round(entry.entryPrice * (1 + floorPct / 100), 4), protectedReturnPct: floorPct, floorArmed: false, armedDate: null, peakPrice: entry.entryPrice, peakDate: entry.date, lastPrice: entry.entryPrice, lastDate: entry.date });
     }
   }
   const holdingsValue = round(openLots.reduce((sum, lot) => sum + lot.quantity * lot.lastPrice, 0));
@@ -195,8 +201,12 @@ const discontinuities = findDiscontinuities(sessions, wanted);
 const generated = generateEntries(sessions, universe, discontinuities);
 if (generated.entries.length < 100) throw new Error(`Five-year signal integrity failed: only ${generated.entries.length} purchases`);
 const variants = Object.fromEntries(FLOOR_PCTS.map((floorPct) => [String(floorPct), replay({ sessions, entries: generated.entries, start: START, end: END, floorPct })]));
+const trailingVariants = Object.fromEntries(TRAILING_GAPS.map((trailingGapPct) => [`8_floor_${trailingGapPct}pt_trail`, replay({ sessions, entries: generated.entries, start: START, end: END, floorPct: 8, trailingGapPct })]));
 for (const [floorPct, result] of Object.entries(variants)) {
   if (result.closedTrades.some((trade) => trade.maxAchievedReturnPct < Number(floorPct))) throw new Error(`Peak-return integrity failed for ${floorPct}% floor`);
+}
+for (const [name, result] of Object.entries(trailingVariants)) {
+  if (result.closedTrades.some((trade) => trade.maxAchievedReturnPct < 8 || trade.protectedReturnPct < 8)) throw new Error(`Trailing-floor integrity failed for ${name}`);
 }
 const report = {
   strategy: 'ETF-FIXED-FLOOR-5Y',
@@ -208,9 +218,11 @@ const report = {
   generatedEntries: generated.entries,
   diagnostics: generated.diagnostics,
   floorPcts: FLOOR_PCTS,
+  trailingRules: { minimumFloorPct: 8, gapPcts: TRAILING_GAPS, updateTiming: 'The floor carried into a session is tested first; a surviving session high can raise the floor only for a later session.' },
   variants,
+  trailingVariants,
   generatedAt: new Date().toISOString(),
 };
 fs.writeFileSync('research/etf-floor-comparison-5y.json', `${JSON.stringify(report, null, 2)}\n`);
 const summary = (result) => Object.fromEntries(['purchases', 'freshFunding', 'accountValue', 'profit', 'realizedProfit', 'totalReturnPct', 'xirrPct', 'floorExits', 'gapExits', 'armedOpenLots', 'unarmedOpenLots'].map((key) => [key, result[key]]));
-console.log(JSON.stringify({ period: report.period, sessions: sessions.length, universe: report.universe, entries: generated.entries.length, diagnostics: generated.diagnostics, variants: Object.fromEntries(Object.entries(variants).map(([floorPct, result]) => [floorPct, summary(result)])) }, null, 2));
+console.log(JSON.stringify({ period: report.period, sessions: sessions.length, universe: report.universe, entries: generated.entries.length, diagnostics: generated.diagnostics, variants: Object.fromEntries(Object.entries(variants).map(([floorPct, result]) => [floorPct, summary(result)])), trailingVariants: Object.fromEntries(Object.entries(trailingVariants).map(([name, result]) => [name, summary(result)])) }, null, 2));
