@@ -14,6 +14,19 @@ const raw = await client.instruments();
 const instruments = raw.filter(isEtfInstrument).map((row) => ({
   symbol: row.trading_symbol, growwSymbol: row.groww_symbol, name: row.name, category: classifyEtf({ symbol: row.trading_symbol, name: row.name }),
 }));
+// On the next market session, compare the actual 15:15 observation with the official close.
+for (const signal of ledger.signals.filter((row) => row.status === 'PURCHASED' && row.date < today && !Number.isFinite(row.officialClose))) {
+  const instrument = instruments.find((row) => row.symbol === signal.symbol);
+  if (!instrument) continue;
+  try {
+    const candle = normalizeDailyCandles(await client.dailyHistory(instrument.growwSymbol, signal.date, signal.date))
+      .find((row) => row.date === signal.date);
+    if (Number.isFinite(candle?.close) && candle.close > 0) {
+      signal.officialClose = candle.close;
+      signal.closeDifferencePct = Number(((signal.purchasePrice1515 / candle.close - 1) * 100).toFixed(4));
+    }
+  } catch (error) { console.warn(`Close reconciliation ${signal.symbol} ${signal.date}: ${error.message}`); }
+}
 const prices = {}; let liveCount = 0; let currentSessionQuotes = 0;
 const start = new Date(Date.now() - 90 * 86400000).toISOString().slice(0, 10);
 for (const instrument of instruments) {
