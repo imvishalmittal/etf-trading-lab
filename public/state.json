@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-08-28T16:27:42.617Z",
-  "asOf": "2026-08-28",
+  "generatedAt": "2026-08-29T06:18:03.792Z",
+  "asOf": "2026-08-29",
   "mode": "PAPER_ONLY",
   "summary": {
     "totalDeposits": 0,
@@ -12,7 +12,9 @@
     "profit": 0,
     "xirrPct": null,
     "openLots": 0,
-    "closedTrades": 0
+    "closedTrades": 0,
+    "closeComparisonCount": 0,
+    "average1515VsClosePct": null
   },
   "holdings": [],
   "deposits": [],
