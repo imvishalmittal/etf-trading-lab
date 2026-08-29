@@ -1,21 +1,21 @@
 # ETF Trading Lab
 
-Paper-only NSE ETF strategy laboratory. The project automates two fixed-floor paper sleeves, maintains a cash-and-position ledger, publishes a read-only dashboard, and keeps additional variants isolated as research until deliberately promoted.
+Archived NSE ETF strategy laboratory. The strategy was rejected after comparison with the user's diversified mutual-fund plan. All trading automation is disabled; the repository, ledger and dashboard remain as read-only research history.
 
 - Dashboard: https://etf-paper-trading.imvishalmittal.chatgpt.site
 - Research history: [ANALYSIS.md](ANALYSIS.md)
-- Mode: **paper only** — no broker orders are submitted
+- Mode: **RESEARCH_REJECTED** — no purchases, sales or broker orders are submitted
 
-## Active paper strategies
+## Retired paper strategies
 
-Every qualifying ETF selection creates two independent ₹15,000 lots:
+The following sleeves were tested and are retained only as historical definitions:
 
 | Sleeve | Exit |
 |---|---|
 | ETF-8-FLOOR | Arm a fixed +8% floor; sell only if a later session falls back to it |
 | ETF-15-FLOOR | Arm a fixed +15% floor; sell only if a later session falls back to it |
 
-A qualifying session therefore deposits up to ₹30,000. Whole units are recorded and residual funds remain cash. There is no stop-loss or forced exit.
+No new deposits, purchases, valuations or exits are recorded.
 
 ## Frozen entry rule
 
@@ -32,8 +32,8 @@ The decision runs around 15:15 IST on NSE market days:
 
 | Workflow | Schedule | Purpose |
 |---|---|---|
-| Paper ETF purchase | 15:15 IST, Monday–Friday | Evaluate the entry rule and record both ₹15,000 sleeves |
-| Paper ETF floor check | 15:20 IST, Monday–Friday | Update peaks/armed state and check open 8%/15% floor lots |
+| Paper ETF purchase | **Disabled** | Archived notice only; cannot purchase or write the ledger |
+| Paper ETF floor check | **Disabled** | Archived notice only; cannot sell or write the ledger |
 | CI | Pull requests and pushes | Run deterministic tests |
 | Compare ETF fixed floors | Research request/manual | Replay frozen purchases through 8/10/12/15/20% floors |
 | Backtest ETF floors 5Y | Research request/manual | Regenerate five years of entries and compare floors |
@@ -64,7 +64,7 @@ For an X% floor:
 7. The floor never trails upward.
 8. Unsold positions are marked to the final close.
 
-The five-year study selected the fixed 8% and 15% floors for prospective paper trading. Backtests remain research evidence, not permission to place real orders.
+The five-year study did not demonstrate an advantage over the diversified mutual-fund plan sufficient to justify its complexity. Both sleeves were retired on 29 August 2026.
 
 ## Repository map
 
@@ -95,8 +95,8 @@ Paper workflows require `GROWW_TOTP_TOKEN`, `GROWW_TOTP_SECRET`, and optionally 
 
 | Strategy | Status |
 |---|---|
-| 8% fixed floor | Active paper sleeve |
-| 15% fixed floor | Active paper sleeve |
+| 8% fixed floor | **Research rejected; automation disabled** |
+| 15% fixed floor | **Research rejected; automation disabled** |
 | Immediate 8%/12% targets | Retired from new paper purchases |
 | 10%, 12%, 20% fixed floors | Not selected for separate paper sleeves |
 
