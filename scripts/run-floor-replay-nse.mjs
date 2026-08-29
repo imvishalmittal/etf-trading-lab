@@ -115,10 +115,18 @@ const sessions = await fetchSessions(fullStart, END, wanted);
 if (sessions.length < 450) throw new Error(`NSE daily-data completeness failed: only ${sessions.length} sessions`);
 const missingEntryDates = relevant.filter((e) => !sessions.find((s) => s.date === e.date && s.prices[e.symbol]));
 if (missingEntryDates.length) throw new Error(`Missing NSE entry sessions: ${missingEntryDates.slice(0, 10).map((e) => `${e.date}:${e.symbol}`).join(', ')}`);
-const report = { strategy: 'ETF-8-FLOOR', source: 'Official NSE security bhavdata daily OHLC', frozenEntryArtifact: 'ETF_Dip_Recovery_Trade_Ledger_3Y.xlsx', rule: 'Arm fixed +8% floor on first later-session touch; exit on a subsequent session at floor or opening gap', generatedAt: new Date().toISOString(), full24Months: replay({ allSessions: sessions, allEntries: entries, start: fullStart, end: END }), recent3Months: replay({ allSessions: sessions, allEntries: entries, start: recentStart, end: END }) };
-for (const period of [report.full24Months, report.recent3Months]) {
-  if (period.closedTrades.some((trade) => trade.maxAchievedReturnPct < 8)) throw new Error('Peak-return integrity failed: a floor exit never reached +8%');
+const floorPcts = [8, 10, 12, 15, 20];
+const variants = Object.fromEntries(floorPcts.map((floorPct) => [String(floorPct), {
+  floorPct,
+  full24Months: replay({ allSessions: sessions, allEntries: entries, start: fullStart, end: END, floorPct }),
+  recent3Months: replay({ allSessions: sessions, allEntries: entries, start: recentStart, end: END, floorPct }),
+}]));
+const report = { strategy: 'ETF-FIXED-FLOOR-COMPARISON', source: 'Official NSE security bhavdata daily OHLC', frozenEntryArtifact: 'ETF_Dip_Recovery_Trade_Ledger_3Y.xlsx', rule: 'Arm each fixed floor on first later-session touch; exit on a subsequent session at that floor or opening gap', floorPcts, generatedAt: new Date().toISOString(), variants };
+for (const variant of Object.values(report.variants)) {
+  for (const period of [variant.full24Months, variant.recent3Months]) {
+    if (period.closedTrades.some((trade) => trade.maxAchievedReturnPct < variant.floorPct)) throw new Error(`Peak-return integrity failed for ${variant.floorPct}% floor`);
+  }
 }
-fs.mkdirSync('research', { recursive: true }); fs.writeFileSync('research/etf-8-floor-2y.json', `${JSON.stringify(report, null, 2)}\n`);
-const summary = (r) => ({ period: `${r.start} to ${r.end}`, purchases: r.purchases, freshFunding: r.freshFunding, floorExits: r.floorExits, openLots: r.openLots.length, accountValue: r.accountValue, profit: r.profit, totalReturnPct: r.totalReturnPct, xirrPct: r.xirrPct });
-console.log(JSON.stringify({ full24Months: summary(report.full24Months), recent3Months: summary(report.recent3Months) }, null, 2));
+fs.mkdirSync('research', { recursive: true }); fs.writeFileSync('research/etf-floor-comparison-2y.json', `${JSON.stringify(report, null, 2)}\n`);
+const summary = (r) => ({ period: `${r.start} to ${r.end}`, purchases: r.purchases, freshFunding: r.freshFunding, floorExits: r.floorExits, gapExits: r.gapExits, armedOpenLots: r.armedOpenLots, unarmedOpenLots: r.unarmedOpenLots, openLots: r.openLots.length, accountValue: r.accountValue, profit: r.profit, totalReturnPct: r.totalReturnPct, xirrPct: r.xirrPct });
+console.log(JSON.stringify(Object.fromEntries(Object.entries(report.variants).map(([floorPct, variant]) => [floorPct, { full24Months: summary(variant.full24Months), recent3Months: summary(variant.recent3Months) }])), null, 2));
