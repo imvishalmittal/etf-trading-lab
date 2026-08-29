@@ -81,10 +81,13 @@ function replay({ allSessions, allEntries, start, end, ticket = 15000, floorPct 
       if (lot.floorArmed && session.date > lot.armedDate && candle.low <= lot.floorPrice) {
         const sellPrice = round(candle.open < lot.floorPrice ? candle.open : lot.floorPrice, 4);
         const sellValue = round(lot.quantity * sellPrice); cash = round(cash + sellValue);
-        closedTrades.push({ ...lot, sellDate: session.date, sellPrice, sellValue, profit: round(sellValue - lot.purchaseValue), returnPct: round((sellPrice / lot.entryPrice - 1) * 100, 4), exitReason: candle.open < lot.floorPrice ? 'FLOOR_GAP' : 'FLOOR' });
+        closedTrades.push({ ...lot, sellDate: session.date, sellPrice, sellValue, profit: round(sellValue - lot.purchaseValue), returnPct: round((sellPrice / lot.entryPrice - 1) * 100, 4), peakPrice: lot.peakPrice, peakDate: lot.peakDate, maxAchievedReturnPct: round((lot.peakPrice / lot.entryPrice - 1) * 100, 4), exitReason: candle.open < lot.floorPrice ? 'FLOOR_GAP' : 'FLOOR' });
         openLots.splice(i, 1);
-      } else if (!lot.floorArmed && candle.high >= lot.floorPrice) {
-        lot.floorArmed = true; lot.armedDate = session.date;
+      } else {
+        if (candle.high > lot.peakPrice) { lot.peakPrice = candle.high; lot.peakDate = session.date; }
+        if (!lot.floorArmed && candle.high >= lot.floorPrice) {
+          lot.floorArmed = true; lot.armedDate = session.date;
+        }
       }
     }
     for (const entry of entryByDate.get(session.date) || []) {
@@ -93,7 +96,7 @@ function replay({ allSessions, allEntries, start, end, ticket = 15000, floorPct 
       const contribution = round(Math.max(0, purchaseValue - cash));
       if (contribution > 0) { cash = round(cash + contribution); deposits.push({ date: session.date, amount: contribution }); }
       cash = round(cash - purchaseValue);
-      openLots.push({ ...entry, quantity, purchaseValue, floorPrice: round(entry.entryPrice * (1 + floorPct / 100), 4), floorArmed: false, armedDate: null, lastPrice: entry.entryPrice, lastDate: entry.date });
+      openLots.push({ ...entry, quantity, purchaseValue, floorPrice: round(entry.entryPrice * (1 + floorPct / 100), 4), floorArmed: false, armedDate: null, peakPrice: entry.entryPrice, peakDate: entry.date, lastPrice: entry.entryPrice, lastDate: entry.date });
     }
   }
   const holdingsValue = round(openLots.reduce((sum, lot) => sum + lot.quantity * lot.lastPrice, 0));
@@ -113,6 +116,9 @@ if (sessions.length < 450) throw new Error(`NSE daily-data completeness failed: 
 const missingEntryDates = relevant.filter((e) => !sessions.find((s) => s.date === e.date && s.prices[e.symbol]));
 if (missingEntryDates.length) throw new Error(`Missing NSE entry sessions: ${missingEntryDates.slice(0, 10).map((e) => `${e.date}:${e.symbol}`).join(', ')}`);
 const report = { strategy: 'ETF-8-FLOOR', source: 'Official NSE security bhavdata daily OHLC', frozenEntryArtifact: 'ETF_Dip_Recovery_Trade_Ledger_3Y.xlsx', rule: 'Arm fixed +8% floor on first later-session touch; exit on a subsequent session at floor or opening gap', generatedAt: new Date().toISOString(), full24Months: replay({ allSessions: sessions, allEntries: entries, start: fullStart, end: END }), recent3Months: replay({ allSessions: sessions, allEntries: entries, start: recentStart, end: END }) };
+for (const period of [report.full24Months, report.recent3Months]) {
+  if (period.closedTrades.some((trade) => trade.maxAchievedReturnPct < 8)) throw new Error('Peak-return integrity failed: a floor exit never reached +8%');
+}
 fs.mkdirSync('research', { recursive: true }); fs.writeFileSync('research/etf-8-floor-2y.json', `${JSON.stringify(report, null, 2)}\n`);
 const summary = (r) => ({ period: `${r.start} to ${r.end}`, purchases: r.purchases, freshFunding: r.freshFunding, floorExits: r.floorExits, openLots: r.openLots.length, accountValue: r.accountValue, profit: r.profit, totalReturnPct: r.totalReturnPct, xirrPct: r.xirrPct });
 console.log(JSON.stringify({ full24Months: summary(report.full24Months), recent3Months: summary(report.recent3Months) }, null, 2));
