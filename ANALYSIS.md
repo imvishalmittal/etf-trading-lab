@@ -2,6 +2,8 @@
 
 Last updated: 29 August 2026
 
+> **Final status: RESEARCH_REJECTED.** On 29 August 2026 the strategy was retired after its corrected cost-aware results failed to demonstrate a sufficient advantage over the user's diversified mutual-fund plan. Automated purchases and floor checks are disabled. Historical artifacts are preserved for audit only.
+
 This document records the strategy definitions, datasets, workflow runs, artifacts, corrections, results and decisions. Failed experiments are preserved so they cannot later be mistaken for evidence.
 
 ## 1. Research question
@@ -241,73 +243,3 @@ Before promotion, add costs, define a release rule for permanently unarmed holdi
 ## 11. Artifact retention
 
 Artifacts expire after 30 days. Run pages and this document preserve provenance. Cite a result only when its run, commit, rules and integrity status match this log.
-
-
-## 12. Corrected funding, costs, rolling validation and paper promotion
-
-Implemented in [PR #13](https://github.com/imvishalmittal/etf-trading-lab/pull/13).
-
-| Item | Value |
-|---|---|
-| Authoritative run | [33238303537](https://github.com/imvishalmittal/etf-trading-lab/actions/runs/33238303537) |
-| Artifact | [etf-floor-5y-results](https://github.com/imvishalmittal/etf-trading-lab/actions/runs/33238303537/artifacts/9710603186) |
-| Period | 28-Aug-2021 to 27-Aug-2026 |
-| Funding | ₹15,000 every NSE market session for the first three calendar months |
-| Total funding | ₹9,75,000 |
-
-The earlier signal-only funding result and its roughly 18% XIRR are superseded. Depositing cash only when a signal occurred understated cash drag. This replay funds the account every market session exactly as proposed.
-
-### Corrected five-year comparison
-
-| Measure | Fixed 8% floor | Fixed 15% floor |
-|---|---:|---:|
-| Purchases | 339 | 303 |
-| Skipped after funding window | 0 | 36 |
-| Account value | ₹14,52,105.86 | ₹16,63,290.40 |
-| Profit | ₹4,77,105.86 | ₹6,88,290.40 |
-| XIRR | 8.5155% | 11.5808% |
-| Maximum drawdown | -11.9701% | -14.5279% |
-| Maximum open lots | 63 | 91 |
-| Exits / gap exits | 295 / 165 | 214 / 117 |
-| Armed / unarmed open | 11 / 33 | 18 / 71 |
-
-The 15% floor produced more profit and higher XIRR, but tied up more capital, skipped 36 later signals because recycled cash was unavailable, carried more open lots and experienced a larger drawdown.
-
-### Rolling 24-month validation
-
-Twelve cohorts were started three months apart. Each cohort received daily funding for its first three months.
-
-| Measure | Fixed 8% floor | Fixed 15% floor |
-|---|---:|---:|
-| Profitable cohorts | 12 / 12 | 12 / 12 |
-| Median XIRR | 5.9404% | 9.5526% |
-| Worst / best XIRR | 1.7442% / 7.5883% | 7.6955% / 12.8636% |
-| Median maximum drawdown | -4.5664% | -6.6503% |
-| Worst maximum drawdown | -6.7218% | -14.2039% |
-
-This supports paper testing both variants. It does not prove future profitability: the cohorts overlap and share the same reconstructed universe and close-price execution approximation.
-
-### Exact Dhan delivery charges
-
-The model applies zero delivery brokerage, NSE transaction and regulatory charges, GST, buy-side stamp duty, sell-side DP charges, and equity-ETF STT. Open holdings are valued net of estimated exit charges.
-
-| Measure | Fixed 8% floor | Fixed 15% floor |
-|---|---:|---:|
-| Exact-cost XIRR, no slippage | 8.4212% | 11.4933% |
-| Charges incl. estimated open exits | ₹6,074.31 | ₹5,420.33 |
-| XIRR with 5 bps slippage per side | 8.3655% | 11.4508% |
-
-The 10-bps path is recorded in the artifact but is not interpreted as a simple sensitivity because slippage changes whole-unit sizing and therefore the later cash/reinvestment path.
-
-### Prospective paper decision
-
-The active paper sleeves are now:
-
-- **ETF-8-FLOOR:** arm after an 8% gain; on a later session, sell at the fixed 8% floor or the lower opening price after a gap.
-- **ETF-15-FLOOR:** the same state machine with a 15% floor.
-- ₹15,000 per sleeve for the same daily selected ETF; ₹30,000 total daily paper funding.
-- Same entry filter and consecutive-market-session category restriction.
-
-Each paper purchase records the live Groww quote observed at 15:15 IST. On the next market session the workflow stores the official close and the percentage difference, so future evidence can quantify the close-price approximation.
-
-The old immediate 8% and 12% target sleeves are retired. No broker order is placed.
