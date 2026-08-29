@@ -1,0 +1,56 @@
+{
+  "generatedAt": "2026-08-29T06:24:23Z",
+  "status": "PAPER_CANDIDATES",
+  "sourceRun": "https://github.com/imvishalmittal/etf-trading-lab/actions/runs/33238303537",
+  "artifact": "https://github.com/imvishalmittal/etf-trading-lab/actions/runs/33238303537/artifacts/9710603186",
+  "period": {
+    "start": "2021-08-28",
+    "end": "2026-08-27"
+  },
+  "funding": {
+    "dailyPerStrategy": 15000,
+    "marketSessions": 65,
+    "totalPerStrategy": 975000,
+    "months": 3
+  },
+  "strategies": {
+    "fixed8": {
+      "xirrPct": 8.5155,
+      "profit": 477105.86,
+      "maxDrawdownPct": -11.9701,
+      "rolling": {
+        "cohorts": 12,
+        "profitable": 12,
+        "medianXirrPct": 5.9404,
+        "worstXirrPct": 1.7442,
+        "worstMaxDrawdownPct": -6.7218
+      },
+      "exactDhan": {
+        "xirrPct": 8.4212,
+        "totalCostsIncludingOpenExit": 6074.31
+      }
+    },
+    "fixed15": {
+      "xirrPct": 11.5808,
+      "profit": 688290.4,
+      "maxDrawdownPct": -14.5279,
+      "rolling": {
+        "cohorts": 12,
+        "profitable": 12,
+        "medianXirrPct": 9.5526,
+        "worstXirrPct": 7.6955,
+        "worstMaxDrawdownPct": -14.2039
+      },
+      "exactDhan": {
+        "xirrPct": 11.4933,
+        "totalCostsIncludingOpenExit": 5420.33
+      }
+    }
+  },
+  "caveats": [
+    "Reconstructed ETF universe",
+    "Daily close approximates 15:15 entry in historical replay",
+    "Rolling cohorts overlap",
+    "Paper trading only"
+  ]
+}
