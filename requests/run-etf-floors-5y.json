@@ -16,7 +16,10 @@
     "unarmedReleaseMonths": [9, 12, 18],
     "commodityCapPct": 25,
     "roundTripCostPcts": [0.25, 0.5],
+    "exactCostModel": { "broker": "Dhan", "exchange": "NSE", "slippageBpsPerSide": [0, 5, 10] },
+    "fixedFloorComparisonPcts": [8, 15],
+    "rollingCohorts": { "horizonMonths": 24, "stepMonths": 3 },
     "exclusionTests": ["gold", "silver", "gold_and_silver"]
   },
-  "requestRevision": 4
+  "requestRevision": 6
 }

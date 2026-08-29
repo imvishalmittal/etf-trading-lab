@@ -4,8 +4,8 @@
   "dailyDeposit": 30000,
   "purchaseBudget": 30000,
   "strategies": [
-    { "id": "ETF-8", "targetPct": 8, "allocation": 0.5 },
-    { "id": "ETF-12", "targetPct": 12, "allocation": 0.5 }
+    { "id": "ETF-8-FLOOR", "floorPct": 8, "allocation": 0.5 },
+    { "id": "ETF-15-FLOOR", "floorPct": 15, "allocation": 0.5 }
   ],
   "entry": {
     "decisionTime": "15:15",
@@ -20,7 +20,7 @@
     "eligibleFromNextMarketSession": true,
     "stopLoss": null,
     "forcedExit": null,
-    "fillPrice": "target_price_when_session_high_reaches_target"
+    "fillPrice": "fixed_floor_or_lower_gap_open_after_floor_was_armed_on_an_earlier_session"
   },
   "mode": "PAPER_ONLY"
 }

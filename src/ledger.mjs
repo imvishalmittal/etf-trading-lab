@@ -24,11 +24,17 @@ export function buySleeves(ledger, { date, candidate, strategies, budget }) {
       name: candidate.name,
       category: candidate.category,
       purchaseDate: date,
+      purchaseObservedAt: '15:15 IST',
+      purchasePriceSource: 'Groww live quote',
       purchasePrice: round(candidate.currentPrice, 4),
       quantity,
       purchaseValue: cost,
-      targetPct: strategy.targetPct,
-      targetPrice: round(candidate.currentPrice * (1 + strategy.targetPct / 100), 4),
+      floorPct: strategy.floorPct,
+      floorPrice: round(candidate.currentPrice * (1 + strategy.floorPct / 100), 4),
+      floorArmed: false,
+      armedDate: null,
+      peakPrice: round(candidate.currentPrice, 4),
+      peakDate: date,
       lastPrice: round(candidate.currentPrice, 4),
       lastValuationDate: date,
     };
@@ -39,6 +45,8 @@ export function buySleeves(ledger, { date, candidate, strategies, budget }) {
   ledger.signals.push({
     date, status: lots.length ? 'PURCHASED' : 'INSUFFICIENT_CASH',
     symbol: candidate.symbol, category: candidate.category,
+    purchasePrice1515: round(candidate.currentPrice, 4),
+    purchaseObservedAt: '15:15 IST',
     dayReturnPct: round(candidate.dayReturnPct, 4),
     thirtySessionReturnPct: round(candidate.thirtySessionReturnPct, 4),
     volume: candidate.volume,
@@ -61,21 +69,30 @@ export function sellTargets(ledger, { date, quotes }) {
       lot.lastPrice = round(quote.lastPrice, 4);
       lot.lastValuationDate = date;
     }
-    const eligible = date > lot.purchaseDate;
-    if (!eligible || Number(quote?.high) < lot.targetPrice) {
-      remaining.push(lot);
-      continue;
+    if (date > lot.purchaseDate && Number(quote?.high) > Number(lot.peakPrice || lot.purchasePrice)) {
+      lot.peakPrice = round(quote.high, 4);
+      lot.peakDate = date;
     }
-    const proceeds = round(lot.quantity * lot.targetPrice);
+    const eligible = date > lot.purchaseDate;
+    const floorPrice = Number(lot.floorPrice ?? lot.targetPrice);
+    if (!lot.floorArmed && eligible && Number(quote?.high) >= floorPrice) {
+      lot.floorArmed = true;
+      lot.armedDate = date;
+    }
+    const exitEligible = lot.floorArmed && date > lot.armedDate && Number(quote?.low) <= floorPrice;
+    if (!exitEligible) { remaining.push(lot); continue; }
+    const sellPrice = Number(quote?.open) < floorPrice ? Number(quote.open) : floorPrice;
+    const proceeds = round(lot.quantity * sellPrice);
     const trade = {
       ...lot,
       sellDate: date,
-      sellPrice: lot.targetPrice,
+      sellPrice,
       sellValue: proceeds,
       profit: round(proceeds - lot.purchaseValue),
       returnPct: round((proceeds / lot.purchaseValue - 1) * 100, 4),
+      maxAchievedReturnPct: round(((lot.peakPrice || lot.purchasePrice) / lot.purchasePrice - 1) * 100, 4),
       holdingDays: calendarDaysBetween(lot.purchaseDate, date),
-      exitReason: 'TARGET',
+      exitReason: Number(quote?.open) < floorPrice ? 'FLOOR_GAP' : 'FLOOR',
     };
     ledger.cash = round(ledger.cash + proceeds);
     ledger.closedTrades.push(trade);

@@ -55,7 +55,9 @@ export function createGrowwClient(token, fetchImpl = fetch) {
 export function normalizeQuote(payload) {
   return {
     lastPrice: Number(payload.last_price ?? payload.ltp),
+    open: Number(payload.ohlc?.open ?? payload.open),
     high: Number(payload.ohlc?.high ?? payload.high),
+    low: Number(payload.ohlc?.low ?? payload.low),
     previousClose: Number(payload.ohlc?.close ?? payload.previous_close),
     volume: Number(payload.volume ?? payload.total_traded_volume),
     lastTradeTime: payload.last_trade_time ?? payload.timestamp,

@@ -1,6 +1,6 @@
 # ETF Trading Lab
 
-Paper-only NSE ETF strategy laboratory. The project automates two immediate-target paper sleeves, maintains a cash-and-position ledger, publishes a read-only dashboard, and keeps fixed-floor ideas isolated as research until deliberately promoted.
+Paper-only NSE ETF strategy laboratory. The project automates two fixed-floor paper sleeves, maintains a cash-and-position ledger, publishes a read-only dashboard, and keeps additional variants isolated as research until deliberately promoted.
 
 - Dashboard: https://etf-paper-trading.imvishalmittal.chatgpt.site
 - Research history: [ANALYSIS.md](ANALYSIS.md)
@@ -12,8 +12,8 @@ Every qualifying ETF selection creates two independent ₹15,000 lots:
 
 | Sleeve | Exit |
 |---|---|
-| ETF-8 | Sell from the next market session when the session high reaches +8% |
-| ETF-12 | Sell from the next market session when the session high reaches +12% |
+| ETF-8-FLOOR | Arm a fixed +8% floor; sell only if a later session falls back to it |
+| ETF-15-FLOOR | Arm a fixed +15% floor; sell only if a later session falls back to it |
 
 A qualifying session therefore deposits up to ₹30,000. Whole units are recorded and residual funds remain cash. There is no stop-loss or forced exit.
 
@@ -33,7 +33,7 @@ The decision runs around 15:15 IST on NSE market days:
 | Workflow | Schedule | Purpose |
 |---|---|---|
 | Paper ETF purchase | 15:15 IST, Monday–Friday | Evaluate the entry rule and record both ₹15,000 sleeves |
-| Paper ETF target check | 15:20 IST, Monday–Friday | Check open ETF-8 and ETF-12 lots |
+| Paper ETF floor check | 15:20 IST, Monday–Friday | Update peaks/armed state and check open 8%/15% floor lots |
 | CI | Pull requests and pushes | Run deterministic tests |
 | Compare ETF fixed floors | Research request/manual | Replay frozen purchases through 8/10/12/15/20% floors |
 | Backtest ETF floors 5Y | Research request/manual | Regenerate five years of entries and compare floors |
@@ -47,7 +47,7 @@ GitHub schedules may start late during platform congestion. Ledger writes are se
 - `data/ledger.json` is the paper ledger.
 - `public/state.json` is the sanitized dashboard feed.
 - The dashboard presents paper deposits, positions, trades, cash, demat value and XIRR.
-- Backtest artifacts are not yet displayed on the dashboard.
+- The dashboard feed includes each lot's floor state, peak return and drawdown from peak.
 
 The dashboard reads `https://raw.githubusercontent.com/imvishalmittal/etf-trading-lab/main/public/state.json`.
 
@@ -64,7 +64,7 @@ For an X% floor:
 7. The floor never trails upward.
 8. Unsold positions are marked to the final close.
 
-The five-year study found the 8% floor most capital-efficient by XIRR, while the 15% floor produced more absolute profit with much greater funding and open-position requirements. Floors remain research-only.
+The five-year study selected the fixed 8% and 15% floors for prospective paper trading. Backtests remain research evidence, not permission to place real orders.
 
 ## Repository map
 
@@ -95,10 +95,9 @@ Paper workflows require `GROWW_TOTP_TOKEN`, `GROWW_TOTP_SECRET`, and optionally 
 
 | Strategy | Status |
 |---|---|
-| Immediate 8% target | Active paper sleeve |
-| Immediate 12% target | Active paper sleeve |
-| 8% fixed floor | Primary research candidate |
-| 15% fixed floor | Secondary research candidate |
+| 8% fixed floor | Active paper sleeve |
+| 15% fixed floor | Active paper sleeve |
+| Immediate 8%/12% targets | Retired from new paper purchases |
 | 10%, 12%, 20% fixed floors | Not selected for separate paper sleeves |
 
 No backtest result is permission or advice to trade real money.

@@ -1,6 +1,7 @@
 import fs from 'node:fs';
 import { classifyEtf } from '../src/categories.mjs';
 import { trailingFloorPrice } from '../src/floor-backtest.mjs';
+import { dhanDeliveryCharges } from '../src/costs.mjs';
 import { xirr } from '../src/xirr.mjs';
 
 const START = '2021-08-28';
@@ -189,7 +190,7 @@ function addMonths(date, months) {
   return value.toISOString().slice(0, 10);
 }
 
-function replayConstrained({ sessions, entries, start, end, floorPct = 8, fundingMonths = 3, delayedTrailStartPct = null, trailingGapPct = null, maxUnarmedDays = null, commodityCapPct = null, roundTripCostPct = 0 }) {
+function replayConstrained({ sessions, entries, start, end, floorPct = 8, fundingMonths = 3, delayedTrailStartPct = null, trailingGapPct = null, maxUnarmedDays = null, commodityCapPct = null, roundTripCostPct = 0, exactDhanCosts = false, slippageBps = 0 }) {
   const fundingEnd = addMonths(start, fundingMonths);
   const sideCostRate = roundTripCostPct / 200;
   const periodEntries = entries.filter((entry) => entry.date >= start && entry.date <= end);
@@ -197,12 +198,14 @@ function replayConstrained({ sessions, entries, start, end, floorPct = 8, fundin
   let cash = 0, totalCosts = 0, priorEquity = 0, returnIndex = 1, peakReturnIndex = 1, maxDrawdownPct = 0;
   let maxOpenLots = 0, peakDeployedCost = 0, peakHoldingsValue = 0;
   const deposits = [], openLots = [], closedTrades = [], skippedSignals = [];
+  const charge = (side, turnover, category) => exactDhanCosts ? dhanDeliveryCharges({ side, turnover, category }).total : round(turnover * sideCostRate);
   const sellLot = (lot, session, sellPrice, exitReason) => {
-    const grossSellValue = round(lot.quantity * sellPrice);
-    const sellCost = round(grossSellValue * sideCostRate);
+    const effectiveSellPrice = round(sellPrice * (1 - slippageBps / 10000), 4);
+    const grossSellValue = round(lot.quantity * effectiveSellPrice);
+    const sellCost = charge('SELL', grossSellValue, lot.category);
     const netSellValue = round(grossSellValue - sellCost);
     totalCosts = round(totalCosts + sellCost); cash = round(cash + netSellValue);
-    closedTrades.push({ ...lot, sellDate: session.date, sellPrice, grossSellValue, sellCost, sellValue: netSellValue, profit: round(netSellValue - lot.purchaseValue - lot.buyCost), returnPct: round((netSellValue / (lot.purchaseValue + lot.buyCost) - 1) * 100, 4), maxAchievedReturnPct: round((lot.peakPrice / lot.entryPrice - 1) * 100, 4), exitReason });
+    closedTrades.push({ ...lot, sellDate: session.date, sellPrice: effectiveSellPrice, referenceSellPrice: sellPrice, grossSellValue, sellCost, sellValue: netSellValue, profit: round(netSellValue - lot.purchaseValue - lot.buyCost), returnPct: round((netSellValue / (lot.purchaseValue + lot.buyCost) - 1) * 100, 4), maxAchievedReturnPct: round((lot.peakPrice / lot.entryPrice - 1) * 100, 4), exitReason });
   };
   for (const session of sessions.filter((row) => row.date >= start && row.date <= end)) {
     let contributionToday = 0;
@@ -231,8 +234,13 @@ function replayConstrained({ sessions, entries, start, end, floorPct = 8, fundin
     }
     const entry = entryByDate.get(session.date);
     if (entry) {
-      const quantity = Math.floor(TICKET / (entry.entryPrice * (1 + sideCostRate)));
-      const purchaseValue = round(quantity * entry.entryPrice), buyCost = round(purchaseValue * sideCostRate), cashRequired = round(purchaseValue + buyCost);
+      const effectiveEntryPrice = round(entry.entryPrice * (1 + slippageBps / 10000), 4);
+      let quantity = Math.floor(TICKET / effectiveEntryPrice), purchaseValue = 0, buyCost = 0, cashRequired = 0;
+      while (quantity > 0) {
+        purchaseValue = round(quantity * effectiveEntryPrice); buyCost = charge('BUY', purchaseValue, entry.category); cashRequired = round(purchaseValue + buyCost);
+        if (cashRequired <= TICKET) break;
+        quantity -= 1;
+      }
       const commodity = ['GOLD', 'SILVER'].includes(entry.category);
       const currentCost = openLots.reduce((sum, lot) => sum + lot.purchaseValue, 0);
       const currentCommodityCost = openLots.filter((lot) => ['GOLD', 'SILVER'].includes(lot.category)).reduce((sum, lot) => sum + lot.purchaseValue, 0);
@@ -244,7 +252,7 @@ function replayConstrained({ sessions, entries, start, end, floorPct = 8, fundin
         else if (quantity < 1) skippedSignals.push({ date: session.date, symbol: entry.symbol, reason: 'TICKET_BELOW_UNIT_PRICE' });
         else {
           cash = round(cash - cashRequired); totalCosts = round(totalCosts + buyCost);
-          openLots.push({ ...entry, quantity, purchaseValue, buyCost, floorPct, activationPrice: round(entry.entryPrice * (1 + floorPct / 100), 4), floorPrice: round(entry.entryPrice * (1 + floorPct / 100), 4), floorArmed: false, armedDate: null, peakPrice: entry.entryPrice, peakDate: entry.date, lastPrice: entry.entryPrice, lastDate: entry.date });
+          openLots.push({ ...entry, referenceEntryPrice: entry.entryPrice, entryPrice: effectiveEntryPrice, quantity, purchaseValue, buyCost, floorPct, activationPrice: round(effectiveEntryPrice * (1 + floorPct / 100), 4), floorPrice: round(effectiveEntryPrice * (1 + floorPct / 100), 4), floorArmed: false, armedDate: null, peakPrice: effectiveEntryPrice, peakDate: entry.date, lastPrice: entry.entryPrice, lastDate: entry.date });
         }
       }
     }
@@ -257,12 +265,18 @@ function replayConstrained({ sessions, entries, start, end, floorPct = 8, fundin
     maxDrawdownPct = Math.min(maxDrawdownPct, (returnIndex / peakReturnIndex - 1) * 100);
     priorEquity = equity;
   }
-  const holdingsValue = round(openLots.reduce((sum, lot) => sum + lot.quantity * lot.lastPrice * (1 - sideCostRate), 0));
+  let estimatedOpenExitCosts = 0;
+  const holdingsValue = round(openLots.reduce((sum, lot) => {
+    const gross = lot.quantity * lot.lastPrice * (1 - slippageBps / 10000);
+    const exitCost = charge('SELL', gross, lot.category);
+    estimatedOpenExitCosts = round(estimatedOpenExitCosts + exitCost);
+    return sum + gross - exitCost;
+  }, 0));
   const accountValue = round(cash + holdingsValue), freshFunding = round(deposits.reduce((sum, row) => sum + row.amount, 0));
   const flows = deposits.map((row) => ({ date: row.date, amount: -row.amount })); if (freshFunding) flows.push({ date: end, amount: accountValue });
   const rate = freshFunding ? xirr(flows) : null;
   const skippedByReason = Object.fromEntries([...new Set(skippedSignals.map((row) => row.reason))].map((reason) => [reason, skippedSignals.filter((row) => row.reason === reason).length]));
-  return { floorPct, fundingMonths, fundingEnd, delayedTrailStartPct, trailingGapPct, maxUnarmedDays, commodityCapPct, roundTripCostPct, signals: periodEntries.length, purchases: closedTrades.length + openLots.length, skippedSignals: skippedSignals.length, skippedByReason, freshFunding, accountValue, profit: round(accountValue - freshFunding), realizedProfit: round(closedTrades.reduce((sum, row) => sum + row.profit, 0)), totalReturnPct: freshFunding ? round((accountValue / freshFunding - 1) * 100, 4) : null, xirrPct: Number.isFinite(rate) ? round(rate * 100, 4) : null, totalCosts, maxDrawdownPct: round(maxDrawdownPct, 4), maxOpenLots, peakDeployedCost: round(peakDeployedCost), peakHoldingsValue: round(peakHoldingsValue), exits: closedTrades.length, gapExits: closedTrades.filter((row) => row.exitReason === 'FLOOR_GAP').length, timeReleaseExits: closedTrades.filter((row) => row.exitReason === 'UNARMED_TIME_RELEASE').length, armedOpenLots: openLots.filter((row) => row.floorArmed).length, unarmedOpenLots: openLots.filter((row) => !row.floorArmed).length };
+  return { floorPct, fundingMonths, fundingEnd, delayedTrailStartPct, trailingGapPct, maxUnarmedDays, commodityCapPct, roundTripCostPct, exactDhanCosts, slippageBps, signals: periodEntries.length, purchases: closedTrades.length + openLots.length, skippedSignals: skippedSignals.length, skippedByReason, freshFunding, accountValue, profit: round(accountValue - freshFunding), realizedProfit: round(closedTrades.reduce((sum, row) => sum + row.profit, 0)), totalReturnPct: freshFunding ? round((accountValue / freshFunding - 1) * 100, 4) : null, xirrPct: Number.isFinite(rate) ? round(rate * 100, 4) : null, totalCosts, estimatedOpenExitCosts, totalCostsIncludingOpenExit: round(totalCosts + estimatedOpenExitCosts), maxDrawdownPct: round(maxDrawdownPct, 4), maxOpenLots, peakDeployedCost: round(peakDeployedCost), peakHoldingsValue: round(peakHoldingsValue), exits: closedTrades.length, gapExits: closedTrades.filter((row) => row.exitReason === 'FLOOR_GAP').length, timeReleaseExits: closedTrades.filter((row) => row.exitReason === 'UNARMED_TIME_RELEASE').length, armedOpenLots: openLots.filter((row) => row.floorArmed).length, unarmedOpenLots: openLots.filter((row) => !row.floorArmed).length };
 }
 
 const seed = parseSimpleCsv('research/etf-universe-2021.csv');
@@ -287,6 +301,7 @@ const variants = Object.fromEntries(FLOOR_PCTS.map((floorPct) => [String(floorPc
 const trailingVariants = Object.fromEntries(TRAILING_GAPS.map((trailingGapPct) => [`8_floor_${trailingGapPct}pt_trail`, replay({ sessions, entries: generated.entries, start: START, end: END, floorPct: 8, trailingGapPct })]));
 const constrained = {
   fixed8: replayConstrained({ sessions, entries: generated.entries, start: START, end: END }),
+  fixed15: replayConstrained({ sessions, entries: generated.entries, start: START, end: END, floorPct: 15 }),
   delayedTrail15Gap5: replayConstrained({ sessions, entries: generated.entries, start: START, end: END, delayedTrailStartPct: 15, trailingGapPct: 5 }),
   delayedTrail20Gap5: replayConstrained({ sessions, entries: generated.entries, start: START, end: END, delayedTrailStartPct: 20, trailingGapPct: 5 }),
 };
@@ -294,9 +309,33 @@ const releaseRules = Object.fromEntries([[9, 274], [12, 365], [18, 548]].map(([m
 const commodityCap = replayConstrained({ sessions, entries: generated.entries, start: START, end: END, commodityCapPct: 25 });
 const costSensitivity = Object.fromEntries([0.25, 0.5].flatMap((roundTripCostPct) => [
   [`fixed8_cost_${roundTripCostPct}`, replayConstrained({ sessions, entries: generated.entries, start: START, end: END, roundTripCostPct })],
+  [`fixed15_cost_${roundTripCostPct}`, replayConstrained({ sessions, entries: generated.entries, start: START, end: END, floorPct: 15, roundTripCostPct })],
   [`delayed15_cost_${roundTripCostPct}`, replayConstrained({ sessions, entries: generated.entries, start: START, end: END, delayedTrailStartPct: 15, trailingGapPct: 5, roundTripCostPct })],
   [`delayed20_cost_${roundTripCostPct}`, replayConstrained({ sessions, entries: generated.entries, start: START, end: END, delayedTrailStartPct: 20, trailingGapPct: 5, roundTripCostPct })],
 ]));
+const exactCostSensitivity = Object.fromEntries([0, 5, 10].flatMap((slippageBps) => [
+  [`fixed8_dhan_${slippageBps}bps`, replayConstrained({ sessions, entries: generated.entries, start: START, end: END, floorPct: 8, exactDhanCosts: true, slippageBps })],
+  [`fixed15_dhan_${slippageBps}bps`, replayConstrained({ sessions, entries: generated.entries, start: START, end: END, floorPct: 15, exactDhanCosts: true, slippageBps })],
+]));
+const eligibleSessions = sessions.filter((row) => row.date >= START && row.date <= END);
+const firstSessionOnOrAfter = (date) => eligibleSessions.find((row) => row.date >= date)?.date || null;
+const cohortStarts = [];
+for (let requested = START; addMonths(requested, 24) <= END; requested = addMonths(requested, 3)) {
+  const actual = firstSessionOnOrAfter(requested);
+  if (actual && !cohortStarts.includes(actual) && addMonths(actual, 24) <= END) cohortStarts.push(actual);
+}
+const rollingCohorts = cohortStarts.map((start) => {
+  const end = addMonths(start, 24);
+  return { start, end, fixed8: replayConstrained({ sessions, entries: generated.entries, start, end, floorPct: 8 }), fixed15: replayConstrained({ sessions, entries: generated.entries, start, end, floorPct: 15 }) };
+});
+function cohortAggregate(strategy) {
+  const values = rollingCohorts.map((row) => row[strategy]);
+  const sortedXirr = values.map((row) => row.xirrPct).filter(Number.isFinite).sort((a, b) => a - b);
+  const sortedDrawdown = values.map((row) => row.maxDrawdownPct).filter(Number.isFinite).sort((a, b) => a - b);
+  const median = (rows) => rows.length % 2 ? rows[Math.floor(rows.length / 2)] : round((rows[rows.length / 2 - 1] + rows[rows.length / 2]) / 2, 4);
+  return { cohorts: values.length, profitableCohorts: values.filter((row) => row.profit > 0).length, medianXirrPct: median(sortedXirr), worstXirrPct: sortedXirr[0], bestXirrPct: sortedXirr.at(-1), medianMaxDrawdownPct: median(sortedDrawdown), worstMaxDrawdownPct: sortedDrawdown[0], medianPurchases: median(values.map((row) => row.purchases).sort((a, b) => a - b)) };
+}
+const rollingCohortSummary = { fixed8: cohortAggregate('fixed8'), fixed15: cohortAggregate('fixed15') };
 const exclusionUniverses = {
   exGold: universe.filter((row) => row.category !== 'GOLD'),
   exSilver: universe.filter((row) => row.category !== 'SILVER'),
@@ -331,6 +370,8 @@ const report = {
     releaseRules,
     commodityCap,
     costSensitivity,
+    exactCostSensitivity: { broker: 'Dhan', exchange: 'NSE', deliveryBrokerage: 0, slippageBpsPerSide: [0, 5, 10], results: exactCostSensitivity },
+    rollingCohorts: { horizonMonths: 24, stepMonths: 3, cohorts: rollingCohorts, summary: rollingCohortSummary },
     exclusionSensitivity,
   },
   generatedAt: new Date().toISOString(),
