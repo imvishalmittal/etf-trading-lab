@@ -1,5 +1,7 @@
 {
   "schemaVersion": 1,
+  "status": "RESEARCH_REJECTED",
+  "automationEnabled": false,
   "timezone": "Asia/Kolkata",
   "dailyDeposit": 30000,
   "purchaseBudget": 30000,
