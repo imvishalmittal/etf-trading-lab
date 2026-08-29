@@ -4,6 +4,7 @@ import { xirr } from './xirr.mjs';
 const round = (value, digits = 2) => Number(Number(value || 0).toFixed(digits));
 
 export function buildPublicState(ledger, asOf = indiaParts().date) {
+  const closeComparisons = ledger.signals.filter((row) => Number.isFinite(row.closeDifferencePct));
   const holdings = ledger.openLots.map((lot) => {
     const currentValue = round(lot.quantity * (lot.lastPrice || lot.purchasePrice));
     return {
@@ -11,6 +12,8 @@ export function buildPublicState(ledger, asOf = indiaParts().date) {
       holdingDays: calendarDaysBetween(lot.purchaseDate, asOf),
       currentValue,
       returnPct: round((currentValue / lot.purchaseValue - 1) * 100, 4),
+      peakReturnPct: round(((lot.peakPrice || lot.purchasePrice) / lot.purchasePrice - 1) * 100, 4),
+      drawdownFromPeakPct: round(((lot.lastPrice || lot.purchasePrice) / (lot.peakPrice || lot.purchasePrice) - 1) * 100, 4),
     };
   });
   const totalDeposits = round(ledger.deposits.reduce((sum, row) => sum + row.amount, 0));
@@ -31,6 +34,10 @@ export function buildPublicState(ledger, asOf = indiaParts().date) {
       xirrPct: Number.isFinite(rate) ? round(rate * 100, 4) : null,
       openLots: holdings.length,
       closedTrades: ledger.closedTrades.length,
+      closeComparisonCount: closeComparisons.length,
+      average1515VsClosePct: closeComparisons.length
+        ? round(closeComparisons.reduce((sum, row) => sum + row.closeDifferencePct, 0) / closeComparisons.length, 4)
+        : null,
     },
     holdings,
     deposits: [...ledger.deposits].sort((a, b) => b.date.localeCompare(a.date)),
