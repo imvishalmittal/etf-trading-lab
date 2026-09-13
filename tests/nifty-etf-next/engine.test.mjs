@@ -98,6 +98,14 @@ test('P1 enters next session from prior completed 200-session signal and is comp
   assert.ok(result.P1.scenarios.normal.transactions.some((row) => row.action === 'BUY'));
   assert.ok(result.P1.scenarios.normal.transactions.some((row) => row.action === 'SELL_PERIOD_END'));
   assert.ok(result.B1.scenarios.normal.transactions.some((row) => row.action === 'BUY'));
+  const summary = result.P1.scenarios.normal.summary;
+  assert.equal(summary.markedSessions, 5);
+  assert.equal('trades' in summary, false);
+  assert.equal('ladderUsage' in summary, false);
+  assert.ok(summary.fees.fees > 0);
+  assert.ok(summary.fees.dpCharge > 0);
+  assert.ok(summary.fees.slippageCost > 0);
+  assert.equal(summary.fees.fees, summary.transactionFees);
 });
 
 test('signal context uses only completed prior sessions for SMA inputs', () => {

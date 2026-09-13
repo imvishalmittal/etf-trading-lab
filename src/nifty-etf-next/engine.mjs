@@ -185,11 +185,23 @@ function deliveryScenario({ strategyId, signals, executionSessions, config, peri
       const fill = entryBar.open * (1 + bps / 10_000);
       const provisional = calculateDeliveryCosts({ entryReference: entryBar.open, exitReference: entryBar.open, quantity, slippageBps: bps });
       position = { entryDate: day, entryReference: entryBar.open, entryFill: fill, quantity, buyFees: provisional.buyFees };
-      transactions.push({ strategyId, date: day, action: 'BUY', referencePrice: entryBar.open, fillPrice: fill, quantity, fees: provisional.buyFees });
+      transactions.push({
+        strategyId, date: day, action: 'BUY', referencePrice: entryBar.open, fillPrice: fill, quantity,
+        brokerage: 0, stt: provisional.sttBuy, transactionCharges: provisional.transactionChargesBuy,
+        sebiCharges: provisional.sebiChargesBuy, stampDuty: provisional.stampDuty,
+        ipft: provisional.ipftBuy, gst: provisional.gstBuy, dpCharge: 0,
+        fees: provisional.buyFees, slippageCost: (fill - entryBar.open) * quantity,
+      });
     } else if (!pendingDesired && position) {
       const costs = calculateDeliveryCosts({ entryReference: position.entryReference, exitReference: entryBar.open, quantity: position.quantity, slippageBps: bps });
       realized += costs.netPnl;
-      transactions.push({ strategyId, date: day, action: 'SELL', referencePrice: entryBar.open, fillPrice: costs.exitFill, quantity: position.quantity, fees: costs.sellFees, tradeNetPnl: costs.netPnl });
+      transactions.push({
+        strategyId, date: day, action: 'SELL', referencePrice: entryBar.open, fillPrice: costs.exitFill, quantity: position.quantity,
+        brokerage: 0, stt: costs.sttSell, transactionCharges: costs.transactionChargesSell,
+        sebiCharges: costs.sebiChargesSell, stampDuty: 0, ipft: costs.ipftSell,
+        gst: costs.gstSell, dpCharge: costs.dpCharge, fees: costs.sellFees,
+        slippageCost: (entryBar.open - costs.exitFill) * position.quantity, tradeNetPnl: costs.netPnl,
+      });
       position = null;
     }
     if (position) investedSessions += 1;
@@ -206,7 +218,13 @@ function deliveryScenario({ strategyId, signals, executionSessions, config, peri
     const adjustment = finalNet - previousCumulative;
     if (daily.length) daily.at(-1).netPnl += adjustment;
     realized = finalNet;
-    transactions.push({ strategyId, date: finalDay, action: 'SELL_PERIOD_END', referencePrice: finalBar.open, fillPrice: costs.exitFill, quantity: position.quantity, fees: costs.sellFees, tradeNetPnl: costs.netPnl });
+    transactions.push({
+      strategyId, date: finalDay, action: 'SELL_PERIOD_END', referencePrice: finalBar.open, fillPrice: costs.exitFill, quantity: position.quantity,
+      brokerage: 0, stt: costs.sttSell, transactionCharges: costs.transactionChargesSell,
+      sebiCharges: costs.sebiChargesSell, stampDuty: 0, ipft: costs.ipftSell,
+      gst: costs.gstSell, dpCharge: costs.dpCharge, fees: costs.sellFees,
+      slippageCost: (finalBar.open - costs.exitFill) * position.quantity, tradeNetPnl: costs.netPnl,
+    });
     position = null;
   }
   const synthetic = daily.map((row) => ({
@@ -214,9 +232,15 @@ function deliveryScenario({ strategyId, signals, executionSessions, config, peri
   }));
   const summary = summarizeTrades(synthetic, config.capital.modelRupees);
   summary.netPnl = round(daily.reduce((total, row) => total + row.netPnl, 0));
+  summary.markedSessions = summary.trades;
+  delete summary.trades;
+  delete summary.ladderUsage;
   summary.investedSessions = investedSessions;
   summary.roundTrips = transactions.filter((row) => row.action.startsWith('SELL')).length;
   summary.transactionFees = round(transactions.reduce((total, row) => total + (row.fees ?? 0), 0));
+  summary.fees = Object.fromEntries([
+    'brokerage', 'stt', 'transactionCharges', 'sebiCharges', 'stampDuty', 'ipft', 'gst', 'dpCharge', 'fees', 'slippageCost',
+  ].map((key) => [key, round(transactions.reduce((total, row) => total + (row[key] ?? 0), 0))]));
   return { daily, transactions, summary };
 }
 
