@@ -1,0 +1,18 @@
+{
+  "stage": "discovery",
+  "authoritativeRunId": 34768354081,
+  "sourceCommitSha": "e7f98a0fccc9c2fc07bfcef11e2cfb82add812f4",
+  "artifact": {
+    "id": 10321169167,
+    "zipSha256": "e8e650cc6850ce4e4cbb2558cff82945a76d89efe8770f1ebbade49f5c15ab9f"
+  },
+  "observedSessions": 1243,
+  "strategies": {
+    "ST1": "DISCOVERY_REJECTED",
+    "OR1": "DISCOVERY_REJECTED",
+    "VP1": "DISCOVERY_REJECTED"
+  },
+  "validation": "SEALED",
+  "holdout": "SEALED",
+  "deploymentAuthorized": false
+}
