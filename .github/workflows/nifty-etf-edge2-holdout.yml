@@ -1,0 +1,38 @@
+name: NIFTYBEES post-open edge - Sealed holdout
+on:
+  push:
+    branches: [main]
+    paths: ['research/nifty-etf-edge2/HOLDOUT_TRIGGER']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  holdout:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22 }
+      - run: npm test
+      - name: Require a committed validation pass
+        run: node -e "const g=require('./research/nifty-etf-edge2/evidence/validation/gate.json'); if(!Object.values(g.strategies||{}).some(x=>x.decision==='PASS')) process.exit(1)"
+      - name: Resolve read-only Kite session
+        env:
+          KITE_API_KEY: ${{ secrets.KITE_API_KEY }}
+          KITE_API_SECRET: ${{ secrets.KITE_API_SECRET }}
+          KITE_REQUEST_TOKEN: ${{ secrets.KITE_REQUEST_TOKEN }}
+          KITE_ACCESS_TOKEN: ${{ secrets.KITE_ACCESS_TOKEN }}
+        run: node scripts/resolve-kite-token.mjs
+      - name: Run sealed 2026 holdout
+        env:
+          KITE_API_KEY: ${{ secrets.KITE_API_KEY }}
+        run: npm run research:nifty-etf-edge2:holdout
+      - run: cd artifacts/nifty-etf-edge2/holdout && sha256sum -c checksums.sha256
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nifty-etf-edge2-holdout-${{ github.sha }}
+          path: artifacts/nifty-etf-edge2/holdout
+          if-no-files-found: error
+          retention-days: 30

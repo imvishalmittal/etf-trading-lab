@@ -17,7 +17,10 @@
     "research:nifty-etf-next:holdout": "node scripts/run-nifty-etf-next.mjs --stage=holdout",
     "research:nifty-etf-edge:discovery": "node scripts/run-nifty-etf-edge.mjs --stage=discovery",
     "research:nifty-etf-edge:validation": "node scripts/run-nifty-etf-edge.mjs --stage=validation",
-    "research:nifty-etf-edge:holdout": "node scripts/run-nifty-etf-edge.mjs --stage=holdout"
+    "research:nifty-etf-edge:holdout": "node scripts/run-nifty-etf-edge.mjs --stage=holdout",
+    "research:nifty-etf-edge2:discovery": "node scripts/run-nifty-etf-edge2.mjs --stage=discovery",
+    "research:nifty-etf-edge2:validation": "node scripts/run-nifty-etf-edge2.mjs --stage=validation",
+    "research:nifty-etf-edge2:holdout": "node scripts/run-nifty-etf-edge2.mjs --stage=holdout"
   },
   "engines": {
     "node": ">=22"

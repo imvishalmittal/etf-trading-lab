@@ -1,0 +1,58 @@
+name: NIFTYBEES post-open edge - Frozen discovery
+on:
+  pull_request:
+    paths:
+      - 'research/nifty-etf-edge2/**'
+      - 'src/nifty-etf-edge2/**'
+      - 'scripts/run-nifty-etf-edge2.mjs'
+      - 'tests/nifty-etf-edge2/**'
+      - '.github/workflows/nifty-etf-edge2-*.yml'
+      - 'package.json'
+  push:
+    branches: [main]
+    paths: ['research/nifty-etf-edge2/DISCOVERY_TRIGGER']
+  workflow_dispatch:
+permissions:
+  actions: read
+  contents: read
+concurrency:
+  group: nifty-etf-edge2-discovery-${{ github.ref }}
+  cancel-in-progress: false
+jobs:
+  tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22 }
+      - run: npm test
+  discovery:
+    if: github.event_name != 'pull_request'
+    needs: tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22 }
+      - name: Download and verify authoritative source artifact
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh api repos/${GITHUB_REPOSITORY}/actions/artifacts/10315219201/zip > source.zip
+          echo '4c5c64a08206c341b1d3369cfa7240b5ec0ff08c623dfd54836ce10e47f67baa  source.zip' | sha256sum -c -
+          mkdir source
+          unzip -q source.zip -d source
+          cd source
+          sha256sum -c checksums.sha256
+      - name: Run frozen 2020-2024 discovery
+        run: npm run research:nifty-etf-edge2:discovery -- --signal-file=source/data/nifty-50-1m.csv.gz --execution-file=source/data/niftybees-1m.csv.gz
+      - run: cd artifacts/nifty-etf-edge2/discovery && sha256sum -c checksums.sha256
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nifty-etf-edge2-discovery-${{ github.sha }}
+          path: artifacts/nifty-etf-edge2/discovery
+          if-no-files-found: error
+          retention-days: 30
