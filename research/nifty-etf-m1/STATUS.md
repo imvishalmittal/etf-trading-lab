@@ -1,7 +1,7 @@
 # NIFTY-ETF-M1 research status
 
 - Strategy rules and gates: **FROZEN**
-- Discovery: **PENDING_AUTHORITATIVE_RUN**
+- Discovery: **RUNNING** — the first run found no Groww credentials in this repository; the workflow now records that condition as a checksummed `DATA_BLOCKED` result instead of losing the evidence.
 - Validation: **SEALED**
 - Holdout: **SEALED**
 - Paper/live status: **NOT_AUTHORIZED**
