@@ -2,7 +2,9 @@
 
 - Instrument list and discovery data period: **FROZEN**
 - Data acquisition: **COMPLETE — INTEGRITY PASSED**
-- Strategy definitions: **NOT YET OPENED**
+- Strategy definitions: **FROZEN — RETURNS NOT YET CALCULATED**
+- Candidates: `XR1` weekly rotation, `MR1` oversold pullback, `BO1` breakout
+- Discovery: **READY, NOT YET RUN**
 - Validation: **SEALED**
 - Holdout: **SEALED**
 - Paper/live trading: **NOT AUTHORIZED**

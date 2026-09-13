@@ -1,0 +1,42 @@
+{
+  "researchId": "NIFTY-ETF-MULTI-1",
+  "frozenAt": "2026-09-13",
+  "capital": 50000,
+  "periods": {
+    "prehistoryStart": "2018-01-01",
+    "discovery": ["2020-01-01", "2024-12-31"],
+    "validation": ["2025-01-01", "2025-12-31"],
+    "holdoutStart": "2026-01-01"
+  },
+  "universe": ["NIFTYBEES", "BANKBEES", "JUNIORBEES", "ITBEES", "GOLDBEES"],
+  "equityUniverse": ["NIFTYBEES", "BANKBEES", "JUNIORBEES", "ITBEES"],
+  "slippageScenarios": { "normal": 2, "stress": 5, "severe": 10 },
+  "bootstrap": { "resamples": 5000, "seed": 20260913, "familyLowerConfidence": 0.9833 },
+  "strategies": {
+    "XR1": { "signalSchedule": "first_session_of_iso_week", "momentumSessions": 63, "smaSessions": 100 },
+    "MR1": { "rsiSessions": 2, "maximumRsi": 10, "returnSessions": 3, "maximumReturn": -0.02, "trendSmaSessions": 100, "exitSmaSessions": 5, "maximumHeldSessions": 5 },
+    "BO1": { "breakoutSessions": 20, "trendSmaSessions": 100, "rankingMomentumSessions": 63, "exitSessions": 10, "maximumHeldSessions": 20 }
+  },
+  "gates": {
+    "minimumEpisodes": 25,
+    "maximumRejectedActionRate": 0.02,
+    "minimumNormalNetPnl": 0,
+    "minimumProfitFactor": 1.1,
+    "minimumStressNetPnl": 0,
+    "minimumSevereNetPnl": 0,
+    "maximumDrawdown": 10000,
+    "minimumProfitableYears": 3,
+    "minimumProfitableMonthRate": 0.55,
+    "minimumBootstrapLowerMeanPnl": 0,
+    "maximumSingleYearPositiveContribution": 0.5,
+    "maximumTopWinningDecileContribution": 0.6,
+    "maximumAllocation": 50000,
+    "maximumSimultaneousPositions": 1
+  },
+  "dataArtifact": {
+    "runId": 34772431861,
+    "artifactId": 10322457623,
+    "name": "nifty-etf-multi-discovery-data-a8bfed067d5f5ebfc08321d8862c79d05b8ed0ac",
+    "zipSha256": "1ba7d90cd83e662ba0c2946a80c5493892411c85475d9375483ea87f788086c8"
+  }
+}
