@@ -2,7 +2,8 @@ name: NIFTY-ETF-M1 - Frozen discovery
 on:
   pull_request:
     paths:
-      - 'research/nifty-etf-m1/**'
+      - 'research/nifty-etf-m1/frozen-config.json'
+      - 'research/nifty-etf-m1/FROZEN_SPEC.md'
       - 'src/nifty-etf-m1/**'
       - 'scripts/run-nifty-etf-m1.mjs'
       - 'tests/nifty-etf-m1/**'
