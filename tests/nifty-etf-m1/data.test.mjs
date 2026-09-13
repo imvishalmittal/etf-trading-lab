@@ -12,6 +12,7 @@ test('29-calendar-day inclusive chunks stay within Groww limit', () => {
 
 test('normalizes epoch seconds to explicit India timezone', () => {
   assert.equal(normalizeTimestamp(0), '1970-01-01T05:30:00+05:30');
+  assert.equal(normalizeTimestamp('2020-01-02T09:15:00+0530'), '2020-01-02T09:15:00+05:30');
 });
 
 test('audits duplicates, ordering, missing endpoint bars, and invalid OHLC', () => {
