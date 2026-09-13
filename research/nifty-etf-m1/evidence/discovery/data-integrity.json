@@ -3,8 +3,24 @@
     "start": "2020-01-01",
     "end": "2024-12-31"
   },
+  "source": "Groww historical candles",
+  "interval": "1minute",
+  "authenticated": true,
+  "requestedChunks": 63,
+  "firstTimestamp": null,
+  "lastTimestamp": null,
+  "rawBars": 0,
+  "uniqueBars": 0,
   "observedSessions": 0,
   "eligibleSessions": 0,
   "rejectedSessions": 0,
-  "error": "GROWW_ACCESS_TOKEN is required"
+  "missing0915": [],
+  "missing1529": [],
+  "duplicateTimestampCount": 0,
+  "conflictingDuplicateCount": 0,
+  "outOfOrderCount": 0,
+  "invalidOhlcCount": 0,
+  "extremeOpenGaps": [],
+  "criticalIntegrityFailure": false,
+  "result": "DATA_BLOCKED_INSUFFICIENT_SOURCE_COVERAGE"
 }
