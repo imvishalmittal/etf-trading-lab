@@ -1,0 +1,23 @@
+{
+  "stage": "discovery",
+  "authoritativeRunId": 34762446008,
+  "sourceCommitSha": "dca28b6c5f372900b3b7ae255513fa4497aeab48",
+  "artifact": {
+    "id": 10319521801,
+    "zipSha256": "cbcfd54c7e6ab22a6fe2825a61dfecf764f6ba16655a218aaf5ca989d713da47"
+  },
+  "coverage": {
+    "observedSessions": 1243,
+    "openingGapDivergenceSessions": 187,
+    "openingGapDivergenceRate": 0.1504424778761062,
+    "maximumRejectedSessionRate": 0.02
+  },
+  "strategies": {
+    "S1": "DATA_BLOCKED",
+    "S2": "DATA_BLOCKED",
+    "I1": "DATA_BLOCKED"
+  },
+  "validation": "SEALED",
+  "holdout": "SEALED",
+  "deploymentAuthorized": false
+}
