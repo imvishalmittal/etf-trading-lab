@@ -1,0 +1,10 @@
+{
+  "requested": {
+    "start": "2020-01-01",
+    "end": "2024-12-31"
+  },
+  "observedSessions": 0,
+  "eligibleSessions": 0,
+  "rejectedSessions": 0,
+  "error": "GROWW_ACCESS_TOKEN is required"
+}

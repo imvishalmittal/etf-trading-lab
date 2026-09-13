@@ -1,0 +1,35 @@
+name: NIFTY-ETF-M1 - Gated validation
+on: workflow_dispatch
+permissions:
+  contents: read
+concurrency:
+  group: nifty-etf-m1-validation
+  cancel-in-progress: false
+jobs:
+  validation:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22 }
+      - run: npm test
+      - name: Require committed passing discovery gate
+        run: node -e "const g=require('./research/nifty-etf-m1/evidence/discovery/gate.json'); if(g.decision!=='PASS') process.exit(1)"
+      - name: Resolve read-only market-data token
+        env:
+          GROWW_TOTP_TOKEN: ${{ secrets.GROWW_TOTP_TOKEN }}
+          GROWW_TOTP_SECRET: ${{ secrets.GROWW_TOTP_SECRET }}
+          GROWW_ACCESS_TOKEN: ${{ secrets.GROWW_ACCESS_TOKEN }}
+        run: node scripts/resolve-groww-token.mjs
+      - name: Run sealed 2025 validation
+        run: npm run research:nifty-etf-m1:validation
+      - name: Verify artifact checksums
+        run: cd artifacts/nifty-etf-m1/validation && sha256sum -c checksums.sha256
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nifty-etf-m1-validation-${{ github.sha }}
+          path: artifacts/nifty-etf-m1/validation
+          if-no-files-found: error
+          retention-days: 30

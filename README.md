@@ -101,3 +101,9 @@ Paper workflows require `GROWW_TOTP_TOKEN`, `GROWW_TOTP_SECRET`, and optionally 
 | 10%, 12%, 20% fixed floors | Not selected for separate paper sleeves |
 
 No backtest result is permission or advice to trade real money.
+
+## Isolated NIFTYBEES intraday research
+
+`NIFTY-ETF-M1` is a new, isolated research-only study under `research/nifty-etf-m1/`. It tests a predeclared capped 1×/2×/4×/8× intraday loss-progression candidate against three frozen controls using genuine Groww NIFTYBEES one-minute candles, explicit intraday fees, and 2/5/10-bps-per-side slippage.
+
+Discovery (2020–2024), validation (2025), and holdout (2026) are separate workflows. Validation requires a committed passing discovery gate; holdout requires a committed passing validation gate. The study cannot write the paper ledger, submit orders, alter account configuration, or reactivate retired schedules. See [the frozen specification](research/nifty-etf-m1/FROZEN_SPEC.md) and [status](research/nifty-etf-m1/STATUS.md).
