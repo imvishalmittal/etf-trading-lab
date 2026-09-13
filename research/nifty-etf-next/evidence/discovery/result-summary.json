@@ -1,0 +1,71 @@
+{
+  "status": "DISCOVERY_REJECTED",
+  "period": {
+    "start": "2020-01-01",
+    "end": "2024-12-31"
+  },
+  "workflowRun": "https://github.com/imvishalmittal/etf-trading-lab/actions/runs/34750393260",
+  "sourceCommitSha": "7efb31b3e540cd718aef77978e0c409e68f6f95d",
+  "artifact": {
+    "id": 10315219201,
+    "zipSha256": "4c5c64a08206c341b1d3369cfa7240b5ec0ff08c623dfd54836ce10e47f67baa"
+  },
+  "data": {
+    "source": "Zerodha Kite Connect",
+    "signalBars": 576202,
+    "executionBars": 463635,
+    "signalCsvSha256": "9f3258b116a54c7c4233f58851fccca793920b7c4419a35093b3c588153b7727",
+    "executionCsvSha256": "892fd2932377050e44aa500ddb9804aca15f9822cf1296f151d91ec8cc5425ec",
+    "criticalIntegrityFailure": false
+  },
+  "candidates": {
+    "T1": {
+      "decision": "REJECT",
+      "normalNetPnl": -6262.036458,
+      "stressNetPnl": -8943.213651,
+      "severeNetPnl": -13411.842304,
+      "normalProfitFactor": 0.130464,
+      "normalMaximumDrawdown": 6481.535637,
+      "trades": 112,
+      "wins": 6,
+      "losses": 106
+    },
+    "G1": {
+      "decision": "REJECT",
+      "normalNetPnl": -2236.709941,
+      "stressNetPnl": -3602.204618,
+      "severeNetPnl": -5878.029079,
+      "normalProfitFactor": 0.483784,
+      "normalMaximumDrawdown": 2971.691893,
+      "trades": 57,
+      "wins": 5,
+      "losses": 52
+    },
+    "P1": {
+      "decision": "REJECT",
+      "normalNetPnl": 29718.228855,
+      "stressNetPnl": 29349.810169,
+      "severeNetPnl": 28735.779025,
+      "normalMaximumDrawdown": 13066.719911,
+      "investedSessions": 1025,
+      "roundTrips": 15,
+      "normalTransactionFees": 372.165167,
+      "failedGates": ["relative_to_buy_hold"]
+    },
+    "B1": {
+      "role": "BENCHMARK",
+      "normalNetPnl": 42037.569991,
+      "stressNetPnl": 42000.9576,
+      "severeNetPnl": 41939.93695,
+      "normalMaximumDrawdown": 15081.5,
+      "investedSessions": 1235,
+      "roundTrips": 1,
+      "normalTransactionFees": 26.722469
+    }
+  },
+  "laterStages": {
+    "validation": "SEALED",
+    "holdout": "SEALED"
+  },
+  "tradingAuthorized": false
+}

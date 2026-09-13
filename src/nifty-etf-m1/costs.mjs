@@ -95,7 +95,9 @@ export function calculateDeliveryCosts({ entryReference, exitReference, quantity
   const referenceGrossPnl = (exitReference - entryReference) * quantity;
   return {
     entryFill, exitFill, buyTurnover, sellTurnover, brokerage, sttBuy, sttSell, stt,
-    transactionCharges, sebiCharges, stampDuty, ipft, gst, dpCharge, buyFees, sellFees, fees,
+    transactionChargesBuy, transactionChargesSell, transactionCharges,
+    sebiChargesBuy, sebiChargesSell, sebiCharges, stampDuty,
+    ipftBuy, ipftSell, ipft, gstBuy, gstSell, gst, dpCharge, buyFees, sellFees, fees,
     grossPnl, referenceGrossPnl, slippageCost: referenceGrossPnl - grossPnl,
     netPnl: grossPnl - fees,
   };
