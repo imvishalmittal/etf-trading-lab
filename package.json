@@ -8,7 +8,10 @@
     "paper:buy": "node scripts/run-purchase.mjs",
     "paper:sell": "node scripts/run-sell.mjs",
     "backtest:floor": "node scripts/run-floor-replay-nse.mjs",
-    "state": "node scripts/build-public-state.mjs"
+    "state": "node scripts/build-public-state.mjs",
+    "research:nifty-etf-m1:discovery": "node scripts/run-nifty-etf-m1.mjs --stage=discovery",
+    "research:nifty-etf-m1:validation": "node scripts/run-nifty-etf-m1.mjs --stage=validation",
+    "research:nifty-etf-m1:holdout": "node scripts/run-nifty-etf-m1.mjs --stage=holdout"
   },
   "engines": {
     "node": ">=22"

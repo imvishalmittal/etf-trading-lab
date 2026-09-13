@@ -1,0 +1,43 @@
+name: NIFTY-ETF-M1 - Frozen discovery
+on:
+  pull_request:
+    paths:
+      - 'research/nifty-etf-m1/**'
+      - 'src/nifty-etf-m1/**'
+      - 'scripts/run-nifty-etf-m1.mjs'
+      - 'tests/nifty-etf-m1/**'
+      - '.github/workflows/nifty-etf-m1-*.yml'
+      - 'package.json'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: nifty-etf-m1-discovery-${{ github.ref }}
+  cancel-in-progress: false
+jobs:
+  discovery:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22 }
+      - name: Test frozen engine
+        run: npm test
+      - name: Resolve read-only market-data token
+        env:
+          GROWW_TOTP_TOKEN: ${{ secrets.GROWW_TOTP_TOKEN }}
+          GROWW_TOTP_SECRET: ${{ secrets.GROWW_TOTP_SECRET }}
+          GROWW_ACCESS_TOKEN: ${{ secrets.GROWW_ACCESS_TOKEN }}
+        run: node scripts/resolve-groww-token.mjs
+      - name: Run unopened 2020-2024 discovery
+        run: npm run research:nifty-etf-m1:discovery
+      - name: Verify artifact checksums
+        run: cd artifacts/nifty-etf-m1/discovery && sha256sum -c checksums.sha256
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nifty-etf-m1-discovery-${{ github.sha }}
+          path: artifacts/nifty-etf-m1/discovery
+          if-no-files-found: error
+          retention-days: 30

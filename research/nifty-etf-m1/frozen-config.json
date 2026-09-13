@@ -1,0 +1,65 @@
+{
+  "schemaVersion": 1,
+  "strategyId": "NIFTY-ETF-M1",
+  "status": "FROZEN_RESEARCH_ONLY",
+  "instrument": {
+    "exchange": "NSE",
+    "segment": "CASH",
+    "tradingSymbol": "NIFTYBEES",
+    "growwSymbol": "NSE-NIFTYBEES",
+    "interval": "1minute",
+    "timezone": "Asia/Kolkata"
+  },
+  "capital": {
+    "modelRupees": 50000,
+    "baseAllocationRupees": 5000,
+    "multipliers": [1, 2, 4, 8],
+    "maximumAllocationRupees": 40000
+  },
+  "execution": {
+    "entryTime": "09:15",
+    "forcedExitTime": "15:29",
+    "initialHardStopFraction": 0.01,
+    "breakevenActivationFraction": 0.005,
+    "trailingDistanceFraction": 0.005,
+    "stopUpdatesEffective": "next_bar",
+    "gapFill": "bar_open",
+    "throughStopFill": "active_stop"
+  },
+  "variants": {
+    "C0": { "ladder": false, "hardStop": false, "breakevenTrail": false },
+    "C1": { "ladder": true, "hardStop": false, "breakevenTrail": false },
+    "C2": { "ladder": true, "hardStop": true, "breakevenTrail": false },
+    "M1": { "ladder": true, "hardStop": true, "breakevenTrail": true }
+  },
+  "slippageScenarios": {
+    "normal": 2,
+    "stress": 5,
+    "severe": 10
+  },
+  "periods": {
+    "discovery": { "start": "2020-01-01", "end": "2024-12-31" },
+    "validation": { "start": "2025-01-01", "end": "2025-12-31" },
+    "holdout": { "start": "2026-01-01", "end": "LATEST_FULL_SESSION" }
+  },
+  "bootstrap": { "resamples": 5000, "seed": 20260913 },
+  "gates": {
+    "minimumEligibleSessions": 1000,
+    "maximumMissingInvalidRate": 0.02,
+    "minimumNormalNetPnl": 0,
+    "minimumNormalProfitFactor": 1.2,
+    "minimumStressNetPnl": 0,
+    "minimumStressProfitFactor": 1.05,
+    "minimumSevereNetPnl": 0,
+    "maximumDrawdownRupees": 10000,
+    "minimumProfitableYears": 3,
+    "minimumProfitableMonthFraction": 0.55,
+    "minimumBootstrapLower95MeanPnl": 0,
+    "maximumSingleYearPositiveContribution": 0.5,
+    "maximumTopWinnerContribution": 0.6,
+    "maximumMultiplier": 8,
+    "maximumPositionAllocationRupees": 50000,
+    "mustBeatVariants": ["C0", "C1", "C2"],
+    "drawdownMustNotExceedVariant": "C1"
+  }
+}
