@@ -77,3 +77,22 @@ export async function fetchKiteMinuteCandles({ apiKey, accessToken, instrumentTo
   }
   return { candles: normalizeCandles(raw), chunks };
 }
+
+export async function fetchKiteDailyCandles({ apiKey, accessToken, instrumentToken, start, end, spacingMs = 400 }) {
+  if (!apiKey || !accessToken) throw new Error('KITE_API_KEY and KITE_ACCESS_TOKEN are required');
+  if (!Number.isSafeInteger(Number(instrumentToken))) throw new Error('A valid Kite instrument token is required');
+  // Stay below Kite's 2000-day daily-candle limit.
+  const chunks = chunkDateRange(start, end, 1499);
+  const state = { lastRequestAt: 0 };
+  const raw = [];
+  for (let index = 0; index < chunks.length; index += 1) {
+    const chunk = chunks[index];
+    process.stderr.write(`Kite daily ${index + 1}/${chunks.length}: ${chunk.start}..${chunk.end}\n`);
+    const body = await request(apiKey, accessToken, `/instruments/historical/${instrumentToken}/day`, {
+      params: { from: chunk.start, to: chunk.end, continuous: 0, oi: 0 }, spacingMs, state,
+    });
+    if (body.status !== 'success' || !Array.isArray(body.data?.candles)) throw new Error(`Unexpected Kite daily response for ${chunk.start}..${chunk.end}`);
+    raw.push(...body.data.candles);
+  }
+  return { candles: normalizeCandles(raw), chunks };
+}
