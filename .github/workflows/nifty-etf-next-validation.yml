@@ -1,0 +1,42 @@
+name: NIFTY ETF follow-ups - Gated validation
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'research/nifty-etf-next/VALIDATION_TRIGGER'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: nifty-etf-next-validation
+  cancel-in-progress: false
+jobs:
+  validation:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22 }
+      - run: npm test
+      - name: Require at least one committed discovery pass
+        run: node -e "const g=require('./research/nifty-etf-next/evidence/discovery/gate.json'); if(!Object.values(g.strategies||{}).some(x=>x.decision==='PASS')) process.exit(1)"
+      - name: Resolve read-only Kite session
+        env:
+          KITE_API_KEY: ${{ secrets.KITE_API_KEY }}
+          KITE_API_SECRET: ${{ secrets.KITE_API_SECRET }}
+          KITE_REQUEST_TOKEN: ${{ secrets.KITE_REQUEST_TOKEN }}
+          KITE_ACCESS_TOKEN: ${{ secrets.KITE_ACCESS_TOKEN }}
+        run: node scripts/resolve-kite-token.mjs
+      - name: Run sealed 2025 validation
+        env:
+          KITE_API_KEY: ${{ secrets.KITE_API_KEY }}
+        run: npm run research:nifty-etf-next:validation
+      - run: cd artifacts/nifty-etf-next/validation && sha256sum -c checksums.sha256
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nifty-etf-next-validation-${{ github.sha }}
+          path: artifacts/nifty-etf-next/validation
+          if-no-files-found: error
+          retention-days: 30

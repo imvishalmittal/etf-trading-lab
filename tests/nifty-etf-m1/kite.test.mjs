@@ -22,6 +22,21 @@ test('Kite instrument resolution requires one exact NSE NIFTYBEES mapping', asyn
   assert.equal(result.match.lot_size, '1');
 });
 
+test('Kite instrument resolution supports the exact NSE indices segment', async (t) => {
+  const original = global.fetch;
+  t.after(() => { global.fetch = original; });
+  global.fetch = async () => new Response(
+    'instrument_token,exchange_token,tradingsymbol,name,last_price,expiry,strike,tick_size,lot_size,instrument_type,segment,exchange\n256265,1001,NIFTY 50,NIFTY 50,0,,0,0,1,EQ,INDICES,NSE\n',
+    { status: 200 },
+  );
+  const result = await verifyKiteInstrument({
+    apiKey: 'public-key', accessToken: 'session-token',
+    expected: { exchange: 'NSE', kiteSegment: 'INDICES', tradingSymbol: 'NIFTY 50', instrumentType: 'EQ' },
+  });
+  assert.equal(result.instrumentToken, 256265);
+  assert.equal(result.match.segment, 'INDICES');
+});
+
 test('Kite minute download normalizes candles and chunks requests deterministically', async (t) => {
   const original = global.fetch;
   t.after(() => { global.fetch = original; });

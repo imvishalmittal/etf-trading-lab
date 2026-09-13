@@ -1,0 +1,60 @@
+name: NIFTY ETF follow-ups - Frozen discovery
+on:
+  pull_request:
+    paths:
+      - 'research/nifty-etf-next/**'
+      - 'src/nifty-etf-next/**'
+      - 'src/nifty-etf-m1/costs.mjs'
+      - 'src/nifty-etf-m1/kite-data.mjs'
+      - 'scripts/run-nifty-etf-next.mjs'
+      - 'tests/nifty-etf-next/**'
+      - '.github/workflows/nifty-etf-next-*.yml'
+      - 'package.json'
+  push:
+    branches: [main]
+    paths:
+      - 'research/nifty-etf-next/DISCOVERY_TRIGGER'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: nifty-etf-next-discovery-${{ github.ref }}
+  cancel-in-progress: false
+jobs:
+  tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22 }
+      - run: npm test
+  discovery:
+    if: github.event_name != 'pull_request'
+    needs: tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22 }
+      - name: Resolve read-only Kite session
+        env:
+          KITE_API_KEY: ${{ secrets.KITE_API_KEY }}
+          KITE_API_SECRET: ${{ secrets.KITE_API_SECRET }}
+          KITE_REQUEST_TOKEN: ${{ secrets.KITE_REQUEST_TOKEN }}
+          KITE_ACCESS_TOKEN: ${{ secrets.KITE_ACCESS_TOKEN }}
+        run: node scripts/resolve-kite-token.mjs
+      - name: Run frozen 2020-2024 discovery
+        env:
+          KITE_API_KEY: ${{ secrets.KITE_API_KEY }}
+        run: npm run research:nifty-etf-next:discovery
+      - name: Verify artifact checksums
+        run: cd artifacts/nifty-etf-next/discovery && sha256sum -c checksums.sha256
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nifty-etf-next-discovery-${{ github.sha }}
+          path: artifacts/nifty-etf-next/discovery
+          if-no-files-found: error
+          retention-days: 30

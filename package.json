@@ -11,7 +11,10 @@
     "state": "node scripts/build-public-state.mjs",
     "research:nifty-etf-m1:discovery": "node scripts/run-nifty-etf-m1.mjs --stage=discovery",
     "research:nifty-etf-m1:validation": "node scripts/run-nifty-etf-m1.mjs --stage=validation",
-    "research:nifty-etf-m1:holdout": "node scripts/run-nifty-etf-m1.mjs --stage=holdout"
+    "research:nifty-etf-m1:holdout": "node scripts/run-nifty-etf-m1.mjs --stage=holdout",
+    "research:nifty-etf-next:discovery": "node scripts/run-nifty-etf-next.mjs --stage=discovery",
+    "research:nifty-etf-next:validation": "node scripts/run-nifty-etf-next.mjs --stage=validation",
+    "research:nifty-etf-next:holdout": "node scripts/run-nifty-etf-next.mjs --stage=holdout"
   },
   "engines": {
     "node": ">=22"

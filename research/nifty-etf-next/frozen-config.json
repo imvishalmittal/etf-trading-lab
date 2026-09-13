@@ -1,0 +1,69 @@
+{
+  "schemaVersion": 1,
+  "status": "FROZEN_RESEARCH_ONLY",
+  "frozenAt": "2026-09-13",
+  "capital": { "modelRupees": 50000, "fixedAllocationRupees": 40000 },
+  "instruments": {
+    "signal": { "exchange": "NSE", "kiteSegment": "INDICES", "tradingSymbol": "NIFTY 50", "instrumentType": "EQ" },
+    "execution": { "exchange": "NSE", "kiteSegment": "NSE", "tradingSymbol": "NIFTYBEES", "instrumentType": "EQ" }
+  },
+  "periods": {
+    "discovery": { "start": "2020-01-01", "end": "2024-12-31" },
+    "validation": { "start": "2025-01-01", "end": "2025-12-31" },
+    "holdout": { "start": "2026-01-01", "end": "LATEST_FULL_SESSION" }
+  },
+  "slippageScenarios": { "normal": 2, "stress": 5, "severe": 10 },
+  "intraday": {
+    "openingRangeStart": "09:15",
+    "openingRangeEnd": "09:29",
+    "trendConfirmationEnd": "09:34",
+    "trendEntryTime": "09:35",
+    "latestGapSignalTime": "14:59",
+    "forcedExitTime": "15:20",
+    "hardStopFraction": 0.01,
+    "trendSmaSessions": 50,
+    "gapDownThresholdFraction": -0.0075,
+    "signalExit": "first completed NIFTY one-minute close at or below opening-range high; execute next NIFTYBEES minute open",
+    "stopOrdering": "already-active stop before signal exit; gap through stop fills at bar open"
+  },
+  "positional": {
+    "smaSessions": 200,
+    "signal": "previous completed NIFTY session close strictly above SMA is invested; strictly below SMA is cash; equality preserves state",
+    "executionTime": "09:15",
+    "periodEndExitTime": "15:29",
+    "dailyMarkTime": "15:29",
+    "dailyMarkField": "open",
+    "idleCashReturn": 0
+  },
+  "strategies": {
+    "T1": "opening-range trend confirmation",
+    "G1": "gap-down opening-range recovery",
+    "P1": "positional 200-session trend",
+    "B1": "positional NIFTYBEES buy-and-hold benchmark"
+  },
+  "bootstrap": { "resamples": 5000, "seed": 20260913 },
+  "intradayGates": {
+    "discovery": { "minimumTrades": 100, "minimumProfitableYears": 3 },
+    "validation": { "minimumTrades": 20, "minimumProfitableYears": 1 },
+    "holdout": { "minimumTrades": 10, "minimumProfitableYears": 1 },
+    "maximumRejectedSessionRate": 0.02,
+    "minimumNormalNetPnl": 0,
+    "minimumNormalProfitFactor": 1.2,
+    "minimumStressNetPnl": 0,
+    "minimumStressProfitFactor": 1.05,
+    "minimumSevereNetPnl": 0,
+    "maximumDrawdownRupees": 10000,
+    "minimumProfitableActiveMonthFraction": 0.55,
+    "minimumBootstrapLower95MeanPnl": 0,
+    "maximumSingleYearPositiveContribution": 0.5,
+    "maximumTopWinnerContribution": 0.6
+  },
+  "positionalGates": {
+    "minimumNormalNetPnl": 0,
+    "minimumStressNetPnl": 0,
+    "minimumSevereNetPnl": 0,
+    "minimumInvestedSessions": { "discovery": 250, "validation": 40, "holdout": 25 },
+    "minimumRoundTrips": { "discovery": 2, "validation": 0, "holdout": 0 },
+    "acceptance": "normal P1 either beats B1 with no worse drawdown, or retains at least 90% of B1 positive net P&L with drawdown no more than 75% of B1"
+  }
+}

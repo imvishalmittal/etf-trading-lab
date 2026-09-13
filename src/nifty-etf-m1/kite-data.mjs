@@ -37,10 +37,14 @@ export async function verifyKiteInstrument({ apiKey, accessToken, expected }) {
   const state = { lastRequestAt: 0 };
   const text = await request(apiKey, accessToken, '/instruments/NSE', { responseType: 'text', state });
   const rows = parseCsv(text);
+  const expectedSegment = expected.kiteSegment ?? 'NSE';
   const matches = rows.filter((row) => row.exchange === expected.exchange
-    && row.segment === 'NSE' && row.tradingsymbol === expected.tradingSymbol);
+    && row.segment === expectedSegment && row.tradingsymbol === expected.tradingSymbol);
   if (matches.length !== 1) throw new Error(`Expected exactly one Kite NSE/${expected.tradingSymbol} instrument, found ${matches.length}`);
   const match = matches[0];
+  if (expected.instrumentType && match.instrument_type !== expected.instrumentType) {
+    throw new Error(`Kite instrument type mismatch: ${match.instrument_type} != ${expected.instrumentType}`);
+  }
   const instrumentToken = Number(match.instrument_token);
   if (!Number.isSafeInteger(instrumentToken) || instrumentToken <= 0) throw new Error(`Invalid Kite instrument token: ${match.instrument_token}`);
   return {
@@ -73,4 +77,3 @@ export async function fetchKiteMinuteCandles({ apiKey, accessToken, instrumentTo
   }
   return { candles: normalizeCandles(raw), chunks };
 }
-
