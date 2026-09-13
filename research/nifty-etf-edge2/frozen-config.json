@@ -1,0 +1,45 @@
+{
+  "schemaVersion": 1,
+  "status": "FROZEN_RESEARCH_ONLY",
+  "frozenAt": "2026-09-13",
+  "capital": { "modelRupees": 50000, "fixedAllocationRupees": 40000 },
+  "periods": {
+    "discovery": { "start": "2020-01-01", "end": "2024-12-31" },
+    "validation": { "start": "2025-01-01", "end": "2025-12-31" },
+    "holdout": { "start": "2026-01-01", "end": "LATEST_FULL_SESSION" }
+  },
+  "slippageScenarios": { "normal": 2, "stress": 5, "severe": 10 },
+  "session": { "usableStart": "09:20", "dailyClose": "15:29", "intradayExit": "15:15" },
+  "st1": { "marketSma": 200, "assetSma": 100, "downSessions": 3, "minimumCumulativeDecline": -0.02, "exitSma": 5, "atrSessions": 14, "atrStopMultiple": 2, "maximumHoldingSessions": 5, "entryTime": "09:20" },
+  "or1": { "marketSma": 50, "rangeStart": "09:20", "rangeEnd": "09:34", "firstSignalBlockEnd": "09:39", "lastSignalBlockEnd": "11:59", "rewardRiskMultiple": 1.5, "minimumRiskFraction": 0.0025, "maximumRiskFraction": 0.015 },
+  "vp1": { "marketSma": 50, "rangeStart": "09:20", "rangeEnd": "09:34", "firstSignalBlockEnd": "09:39", "lastSignalBlockEnd": "13:59", "rewardRiskMultiple": 1.5, "minimumRiskFraction": 0.002, "maximumRiskFraction": 0.01 },
+  "bootstrap": { "resamples": 5000, "seed": 20260913 },
+  "gates": {
+    "minimumTrades": {
+      "discovery": { "ST1": 50, "OR1": 100, "VP1": 100 },
+      "validation": { "ST1": 10, "OR1": 20, "VP1": 20 },
+      "holdout": { "ST1": 5, "OR1": 10, "VP1": 10 }
+    },
+    "minimumProfitableYears": { "discovery": 3, "validation": 1, "holdout": 1 },
+    "maximumRejectedSessionRate": 0.02,
+    "minimumNormalNetPnl": 0,
+    "minimumNormalProfitFactor": 1.2,
+    "minimumStressNetPnl": 0,
+    "minimumStressProfitFactor": 1.05,
+    "minimumSevereNetPnl": 0,
+    "maximumDrawdownRupees": 10000,
+    "minimumProfitableActiveMonthFraction": 0.55,
+    "minimumBootstrapLower95MeanPnl": 0,
+    "maximumSingleYearPositiveContribution": 0.5,
+    "maximumTopWinnerContribution": 0.6,
+    "maximumAllocationRupees": 40000
+  },
+  "sourceArtifact": {
+    "repository": "imvishalmittal/etf-trading-lab",
+    "runId": 34750393260,
+    "artifactId": 10315219201,
+    "zipSha256": "4c5c64a08206c341b1d3369cfa7240b5ec0ff08c623dfd54836ce10e47f67baa",
+    "signalCsvSha256": "9f3258b116a54c7c4233f58851fccca793920b7c4419a35093b3c588153b7727",
+    "executionCsvSha256": "892fd2932377050e44aa500ddb9804aca15f9822cf1296f151d91ec8cc5425ec"
+  }
+}
