@@ -4,7 +4,7 @@ Frozen on 13 September 2026 before viewing any NIFTYBEES minute result. This nam
 
 ## Instrument and sizing
 
-- NSE cash `NIFTYBEES`, verified at run time against Groww's instrument master.
+- NSE cash `NIFTYBEES`, verified at run time against the selected authoritative broker instrument master. Groww's zero-coverage result is preserved; the operational data-source repair uses Zerodha Kite Connect without changing any economic rule.
 - Intraday only; entry at the exact 09:15 IST one-minute bar open and mandatory exit at the exact 15:29 IST bar open.
 - Model capital ₹50,000; base allocation ₹5,000; whole-unit quantity is `floor(₹5,000 × multiplier / entry price)`.
 - Capped multipliers are `1× → 2× → 4× → 8×`; maximum intended allocation is ₹40,000.

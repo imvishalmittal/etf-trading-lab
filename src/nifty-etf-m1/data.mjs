@@ -51,7 +51,9 @@ function indiaTimestampFromEpoch(value) {
 export function normalizeTimestamp(value) {
   if (typeof value === 'number' || /^\d{10,13}$/.test(String(value))) return indiaTimestampFromEpoch(value);
   const text = String(value).trim().replace(' ', 'T');
-  return /([zZ]|[+-]\d\d:\d\d)$/.test(text) ? text : `${text}+05:30`;
+  if (/[zZ]$/.test(text) || /[+-]\d\d:\d\d$/.test(text)) return text;
+  if (/[+-]\d{4}$/.test(text)) return `${text.slice(0, -2)}:${text.slice(-2)}`;
+  return `${text}+05:30`;
 }
 
 export function normalizeCandles(raw) {
@@ -111,7 +113,7 @@ export async function fetchMinuteCandles({ token, instrument, start, end, spacin
   return { candles: normalizeCandles(raw), chunks };
 }
 
-export function auditCandles(candles, { start, end }) {
+export function auditCandles(candles, { start, end, source = 'Groww historical candles' }) {
   const ordered = [...candles].sort((a, b) => a.timestamp.localeCompare(b.timestamp));
   let outOfOrder = 0;
   for (let i = 1; i < candles.length; i += 1) if (candles[i].timestamp < candles[i - 1].timestamp) outOfOrder += 1;
@@ -153,7 +155,7 @@ export function auditCandles(candles, { start, end }) {
   return {
     candles: deduplicated,
     report: {
-      source: 'Groww historical candles', interval: '1minute', requested: { start, end },
+      source, interval: '1minute', requested: { start, end },
       firstTimestamp: deduplicated[0]?.timestamp ?? null, lastTimestamp: deduplicated.at(-1)?.timestamp ?? null,
       rawBars: candles.length, uniqueBars: deduplicated.length, observedSessions: sessions.size,
       eligibleSessions: sessions.size - rejected.size, rejectedSessions: rejected.size,

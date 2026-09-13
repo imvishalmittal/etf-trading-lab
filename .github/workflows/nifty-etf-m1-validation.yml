@@ -16,13 +16,17 @@ jobs:
       - run: npm test
       - name: Require committed passing discovery gate
         run: node -e "const g=require('./research/nifty-etf-m1/evidence/discovery/gate.json'); if(g.decision!=='PASS') process.exit(1)"
-      - name: Resolve read-only market-data token
+      - name: Resolve read-only Kite session
         env:
-          GROWW_TOTP_TOKEN: ${{ secrets.GROWW_TOTP_TOKEN }}
-          GROWW_TOTP_SECRET: ${{ secrets.GROWW_TOTP_SECRET }}
-          GROWW_ACCESS_TOKEN: ${{ secrets.GROWW_ACCESS_TOKEN }}
-        run: node scripts/resolve-groww-token.mjs
+          KITE_API_KEY: ${{ secrets.KITE_API_KEY }}
+          KITE_API_SECRET: ${{ secrets.KITE_API_SECRET }}
+          KITE_REQUEST_TOKEN: ${{ secrets.KITE_REQUEST_TOKEN }}
+          KITE_ACCESS_TOKEN: ${{ secrets.KITE_ACCESS_TOKEN }}
+        run: node scripts/resolve-kite-token.mjs
       - name: Run sealed 2025 validation
+        env:
+          MARKET_DATA_SOURCE: kite
+          KITE_API_KEY: ${{ secrets.KITE_API_KEY }}
         run: npm run research:nifty-etf-m1:validation
       - name: Verify artifact checksums
         run: cd artifacts/nifty-etf-m1/validation && sha256sum -c checksums.sha256
