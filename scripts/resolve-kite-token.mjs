@@ -17,6 +17,7 @@ if (!accessToken) {
 }
 
 if (!process.env.GITHUB_ENV) throw new Error('GITHUB_ENV is required; this helper is intended for GitHub Actions');
+// Register the generated token with GitHub's log masker before exporting it to later steps.
+process.stdout.write(`::add-mask::${accessToken}\n`);
 fs.appendFileSync(process.env.GITHUB_ENV, `KITE_ACCESS_TOKEN=${accessToken}\n`);
 process.stdout.write(`Kite authentication resolved via ${method}; token value was not logged.\n`);
-
