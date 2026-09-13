@@ -4,6 +4,7 @@ Archived NSE ETF strategy laboratory. The strategy was rejected after comparison
 
 - Dashboard: https://etf-paper-trading.imvishalmittal.chatgpt.site
 - Research history: [ANALYSIS.md](ANALYSIS.md)
+- Consolidated modern research results: [research/RESEARCH_SUMMARY.md](research/RESEARCH_SUMMARY.md)
 - Mode: **RESEARCH_REJECTED** — no purchases, sales or broker orders are submitted
 
 ## Retired paper strategies
@@ -70,17 +71,19 @@ The five-year study did not demonstrate an advantage over the diversified mutual
 
 | Path | Purpose |
 |---|---|
-| `config/strategy.json` | Active paper configuration |
+| `config/strategy.json` | Retired paper configuration retained for audit |
 | `src/selection.mjs` | Qualification, ranking and category exclusion |
 | `src/ledger.mjs` | Deposits, purchases and sales |
 | `src/floor-backtest.mjs` | Focused fixed-floor engine |
-| `scripts/run-purchase.mjs` | Scheduled paper purchase decision |
-| `scripts/run-sell.mjs` | Scheduled target check |
+| `scripts/run-purchase.mjs` | Archived purchase logic; its workflow is disabled |
+| `scripts/run-sell.mjs` | Archived exit logic; its workflow is disabled |
 | `scripts/run-floor-replay-nse.mjs` | Frozen-entry 24-month floor comparison |
 | `scripts/run-floor-5y-nse.mjs` | Reconstructed five-year comparison |
 | `research/frozen-entries-*.csv` | Published simulated entries from the original workbook |
 | `research/etf-universe-2021.csv` | March 2021 universe seed |
 | `requests/` | Auditable research triggers |
+| `research/RESEARCH_SUMMARY.md` | Consolidated terminal results and provenance |
+| `research/nifty-etf-*` | Frozen specifications, engines' evidence and stage status |
 
 ## Local verification
 
@@ -93,17 +96,16 @@ Paper workflows require `GROWW_TOTP_TOKEN`, `GROWW_TOTP_SECRET`, and optionally 
 
 ## Research status
 
-| Strategy | Status |
-|---|---|
-| 8% fixed floor | **Research rejected; automation disabled** |
-| 15% fixed floor | **Research rejected; automation disabled** |
-| Immediate 8%/12% targets | Retired from new paper purchases |
-| 10%, 12%, 20% fixed floors | Not selected for separate paper sleeves |
+Every implemented strategy family is retired, rejected, or blocked. Nothing is awaiting paper/live activation.
 
-No backtest result is permission or advice to trade real money.
+| Research family | Discovery result | Key finding |
+|---|---|---|
+| Legacy ETF targets and fixed floors | **RESEARCH_REJECTED** | Insufficient advantage over the diversified mutual-fund plan; automation disabled |
+| `NIFTY-ETF-M1` capped loss progression | **DISCOVERY_REJECTED** | M1 lost ₹98,043.59 with profit factor 0.348 |
+| Follow-ups T1/G1/P1 | **DISCOVERY_REJECTED** | Intraday variants lost; profitable P1 underperformed passive NIFTYBEES materially |
+| EDGE1 S1/S2/I1 | **DATA_BLOCKED** | 15.04% of exact 09:15 ETF opening gaps failed the frozen integrity check |
+| EDGE2 ST1/OR1/VP1 | **DISCOVERY_REJECTED** | Valid post-open data, but all three candidates lost after realistic execution costs |
 
-## Isolated NIFTYBEES intraday research
+The modern studies use genuine Zerodha Kite minute candles, explicit NSE equity costs, adverse 2/5/10-bps-per-side slippage, deterministic ledgers, checksummed artifacts, and separately sealed discovery/validation/holdout workflows. No candidate passed discovery, so validation and holdout never opened.
 
-`NIFTY-ETF-M1` is a new, isolated research-only study under `research/nifty-etf-m1/`. It tests a predeclared capped 1×/2×/4×/8× intraday loss-progression candidate against three frozen controls using genuine broker historical NIFTYBEES one-minute candles, explicit intraday fees, and 2/5/10-bps-per-side slippage. Groww returned zero discovery candles; the current read-only acquisition path uses Zerodha Kite Connect and contains no order endpoint.
-
-Discovery (2020–2024), validation (2025), and holdout (2026) are separate workflows. Validation requires a committed passing discovery gate; holdout requires a committed passing validation gate. The study cannot write the paper ledger, submit orders, alter account configuration, or reactivate retired schedules. See [the frozen specification](research/nifty-etf-m1/FROZEN_SPEC.md) and [status](research/nifty-etf-m1/STATUS.md).
+See [the consolidated result matrix](research/RESEARCH_SUMMARY.md), individual frozen specifications and evidence under `research/`, and the full chronological [decision log](ANALYSIS.md). No backtest result is permission or advice to trade real money.
