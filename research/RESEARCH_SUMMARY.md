@@ -15,6 +15,7 @@ Last updated: 13 September 2026
 | Follow-up research | 2020–2024 | T1, G1, P1; B1 benchmark | All candidates `DISCOVERY_REJECTED` | [Run 34750393260](https://github.com/imvishalmittal/etf-trading-lab/actions/runs/34750393260) |
 | EDGE1 exact-open research | 2020–2024 | S1, S2, I1 | `DATA_BLOCKED` | [Run 34762446008](https://github.com/imvishalmittal/etf-trading-lab/actions/runs/34762446008) |
 | EDGE2 post-open research | 2020–2024 | ST1, OR1, VP1 | All `DISCOVERY_REJECTED` | [Run 34768354081](https://github.com/imvishalmittal/etf-trading-lab/actions/runs/34768354081) |
+| Multi-ETF data acquisition | 2018–2024 | NIFTYBEES, BANKBEES, JUNIORBEES, ITBEES, GOLDBEES | `DATA_READY`; strategies not yet calculated | [Run 34772431861](https://github.com/imvishalmittal/etf-trading-lab/actions/runs/34772431861) |
 
 ## Comparable economic results
 
@@ -42,6 +43,7 @@ EDGE1 P&L is intentionally excluded from this table because its exact-open cover
 - Signals were causal and next-bar executable; stop ambiguity was handled conservatively.
 - Discovery, validation and holdout were separately gated. No candidate opened validation.
 - Complete trade ledgers, summaries, gate decisions and checksums are retained in run artifacts and evidence directories.
+- The frozen multi-ETF daily dataset passed its integrity audit: 1,733 rows each for NIFTYBEES, BANKBEES and JUNIORBEES; 1,732 for GOLDBEES; and 1,120 for ITBEES from its 1 July 2020 listing. Artifact `10322457623` has ZIP SHA-256 `1ba7d90cd83e662ba0c2946a80c5493892411c85475d9375483ea87f788086c8`.
 
 ## Why research stopped at each stage
 
@@ -54,4 +56,4 @@ Stopping is part of the research design. Rules are not changed in response to ou
 
 ## Defensible next direction
 
-Do not optimize more NIFTYBEES thresholds on the already-inspected 2020–2024 discovery sample. The next project should predeclare hypotheses on a broader liquid ETF universe and acquire new data before results are viewed. Cross-sectional stock research additionally requires licensed point-in-time constituent history to avoid survivorship bias.
+Do not optimize more NIFTYBEES thresholds on the already-inspected 2020–2024 discovery sample. The broader liquid ETF universe is now frozen and its discovery data is ready. The next step is to predeclare short-term strategy hypotheses before calculating any returns. Cross-sectional stock research additionally requires licensed point-in-time constituent history to avoid survivorship bias.
