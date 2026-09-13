@@ -1,0 +1,14 @@
+{
+  "exchange": "NSE",
+  "exchangeToken": "10576",
+  "tradingSymbol": "NIFTYBEES",
+  "growwSymbol": "NSE-NIFTYBEES",
+  "instrumentType": "EQ",
+  "segment": "CASH",
+  "series": "EQ",
+  "isin": "INF204KB14I2",
+  "lotSize": 1,
+  "tickSize": 0.01,
+  "instrumentMasterSha256": "dbf07ef9fe49a2bbde95db173f1d689525c92738f2c850f71a6c9049da04810d",
+  "instrumentMasterUrl": "https://growwapi-assets.groww.in/instruments/instrument.csv"
+}
