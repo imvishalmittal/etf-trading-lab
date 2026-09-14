@@ -29,3 +29,10 @@ Authoritative acquisition evidence:
 Integrity defects count duplicate dates, invalid OHLC, non-positive prices, zero-volume dates, and close-to-close moves above 15%. `ITBEES` begins at its actual 2020 listing; no pre-listing history was fabricated.
 
 Discovery evidence: [run 34794327066](https://github.com/imvishalmittal/etf-trading-lab/actions/runs/34794327066), artifact `10328862790`. XR1 failed only the frozen single-year concentration gate; MR1 and BO1 failed multiple economic or robustness gates. See [discovery results](evidence/discovery/RESULTS.md).
+
+User-authorized post-selection OOS diagnostic for unchanged XR1 and BO1:
+
+- Protocol: **FROZEN BEFORE 2025/2026 ACQUISITION**
+- Performance: 2025 and 2026 YTD, reported separately and continuously combined
+- Original discovery verdict: **UNCHANGED**
+- Paper/live trading: **NOT AUTHORIZED**
