@@ -61,7 +61,7 @@ function features(market, symbol, date) {
   const { row, index } = item, rows = market.series[symbol];
   return {
     row, index,
-    sma5: smaAt(rows, index, 5), sma100: smaAt(rows, index, 100),
+    sma5: smaAt(rows, index, 5), sma100: smaAt(rows, index, 100), sma200: smaAt(rows, index, 200),
     momentum63: index >= 63 ? row.close / rows[index - 63].close - 1 : null,
     return3: index >= 3 ? row.close / rows[index - 3].close - 1 : null,
     rsi2: market.rsi2[symbol][index],
@@ -114,6 +114,44 @@ export function generateXR1(market, config, period) {
   return { episodes, rejectedActions };
 }
 
+export function generateXR2(market, config, period) {
+  const episodes = [], rejectedActions = [], positions = new Map();
+  const rules = config.strategies.XR2;
+  const priorDate = market.calendar.filter((date) => date < period.start).at(-1);
+  let pending = null, previousWeek = priorDate ? isoWeek(priorDate) : null;
+  for (let calendarIndex = 0; calendarIndex < market.calendar.length; calendarIndex += 1) {
+    const date = market.calendar[calendarIndex];
+    if (date < period.start || date > period.end) continue;
+    if (pending) {
+      const targets = new Set(pending.targets), removed = [...positions.keys()].filter((symbol) => !targets.has(symbol));
+      const added = pending.targets.filter((symbol) => !positions.has(symbol));
+      const required = [...removed, ...added].map((symbol) => [symbol, openFor(market, symbol, date)]);
+      if (required.some(([, price]) => price === null)) rejectedActions.push({ date, strategyId: 'XR2', reason: 'MISSING_ROTATION_OPEN' });
+      else {
+        const prices = new Map(required);
+        for (const symbol of removed) { episodes.push(episode(positions.get(symbol), date, prices.get(symbol), targets.size ? 'ROTATE' : 'CASH', pending.signalDate)); positions.delete(symbol); }
+        for (const symbol of added) positions.set(symbol, { strategyId: 'XR2', symbol, signalDate: pending.signalDate, entryDate: date, entryReference: prices.get(symbol), allocationCapital: rules.allocationPerHolding });
+      }
+      pending = null;
+    }
+    const week = isoWeek(date);
+    if (week !== previousWeek) {
+      previousWeek = week;
+      const choices = config.universe.map((symbol) => ({ symbol, feature: features(market, symbol, date) }))
+        .filter(({ feature }) => feature && feature.sma100 !== null && feature.momentum63 !== null && feature.row.close > feature.sma100 && feature.momentum63 > 0)
+        .sort((a, b) => b.feature.momentum63 - a.feature.momentum63 || a.symbol.localeCompare(b.symbol));
+      if (calendarIndex + 1 < market.calendar.length && market.calendar[calendarIndex + 1] <= period.end) pending = { signalDate: date, targets: choices.slice(0, rules.maximumHoldings).map(({ symbol }) => symbol) };
+    }
+  }
+  const date = market.calendar.filter((value) => value >= period.start && value <= period.end).at(-1);
+  for (const position of positions.values()) {
+    const row = market.lookup[position.symbol].get(date)?.row;
+    if (valid(row)) episodes.push(episode(position, date, row.close, 'PERIOD_END', date));
+    else rejectedActions.push({ date, strategyId: 'XR2', reason: 'MISSING_PERIOD_END_CLOSE' });
+  }
+  return { episodes, rejectedActions, maximumSimultaneousPositions: rules.maximumHoldings, maximumTotalAllocation: rules.maximumHoldings * rules.allocationPerHolding };
+}
+
 function selectMR1(market, config, date) {
   return config.equityUniverse.map((symbol) => ({ symbol, feature: features(market, symbol, date) }))
     .filter(({ feature }) => feature && feature.sma100 !== null && feature.rsi2 !== null && feature.return3 !== null
@@ -127,6 +165,13 @@ function selectBO1(market, config, date) {
     .filter(({ feature }) => feature && feature.sma100 !== null && feature.prior20High !== null && feature.momentum63 !== null
       && feature.row.close > feature.sma100 && feature.row.close > feature.prior20High)
     .sort((a, b) => b.feature.momentum63 - a.feature.momentum63 || a.symbol.localeCompare(b.symbol))[0] ?? null;
+}
+
+function selectBO2(market, config, date) {
+  const nifty = features(market, 'NIFTYBEES', date), rules = config.strategies.BO2;
+  const breadth = config.equityUniverse.filter((symbol) => { const feature = features(market, symbol, date); return feature && feature.sma100 !== null && feature.row.close > feature.sma100; }).length;
+  if (!nifty || nifty.sma200 === null || nifty.row.close <= nifty.sma200 || breadth < rules.minimumPositiveBreadth) return null;
+  return selectBO1(market, config, date);
 }
 
 export function generateDailyCandidate(id, market, config, period) {
@@ -151,10 +196,10 @@ export function generateDailyCandidate(id, market, config, period) {
       const feature = features(market, position.symbol, date);
       if (!feature) rejectedActions.push({ date, strategyId: id, reason: 'MISSING_HELD_SESSION' });
       else if (id === 'MR1' && (feature.row.close >= feature.sma5 || position.holdingSessions >= config.strategies.MR1.maximumHeldSessions)) pendingExit = { signalDate: date, reason: position.holdingSessions >= config.strategies.MR1.maximumHeldSessions ? 'TIME_EXIT' : 'SMA5_EXIT' };
-      else if (id === 'BO1' && (feature.row.close < feature.prior10Low || position.holdingSessions >= config.strategies.BO1.maximumHeldSessions)) pendingExit = { signalDate: date, reason: position.holdingSessions >= config.strategies.BO1.maximumHeldSessions ? 'TIME_EXIT' : 'DONCHIAN_EXIT' };
+      else if ((id === 'BO1' || id === 'BO2') && (feature.row.close < feature.prior10Low || position.holdingSessions >= config.strategies.BO1.maximumHeldSessions)) pendingExit = { signalDate: date, reason: position.holdingSessions >= config.strategies.BO1.maximumHeldSessions ? 'TIME_EXIT' : 'DONCHIAN_EXIT' };
     }
     if (!position && !pendingEntry && offset + 1 < dates.length) {
-      const selected = id === 'MR1' ? selectMR1(market, config, date) : selectBO1(market, config, date);
+      const selected = id === 'MR1' ? selectMR1(market, config, date) : id === 'BO2' ? selectBO2(market, config, date) : selectBO1(market, config, date);
       if (selected) pendingEntry = { symbol: selected.symbol, signalDate: date };
     }
   }
@@ -178,7 +223,8 @@ export function affordableQuantity(entryReference, bps, capital, isEquity = true
 
 function priceEpisodes(episodes, bps, capital) {
   return episodes.map((base) => {
-    const isEquity = equityOriented(base.symbol), quantity = affordableQuantity(base.entryReference, bps, capital, isEquity);
+    const isEquity = equityOriented(base.symbol), allocation = base.allocationCapital ?? capital;
+    const quantity = affordableQuantity(base.entryReference, bps, allocation, isEquity);
     if (!quantity) return null;
     const costs = calculateDeliveryCosts({ entryReference: base.entryReference, exitReference: base.exitReference, quantity, slippageBps: bps, equityOriented: isEquity });
     return { ...base, scenario: null, slippageBps: bps, quantity, equityOriented: isEquity, deployedCapital: costs.buyTurnover + costs.buyFees, ...costs };
@@ -246,7 +292,7 @@ function summarizeScenario(trades, market, period, config) {
 }
 
 export function runCandidate(id, market, config, period) {
-  const generated = id === 'XR1' ? generateXR1(market, config, period) : generateDailyCandidate(id, market, config, period);
+  const generated = id === 'XR1' ? generateXR1(market, config, period) : id === 'XR2' ? generateXR2(market, config, period) : generateDailyCandidate(id, market, config, period);
   const trades = {}, summary = {};
   for (const [scenario, bps] of Object.entries(config.slippageScenarios)) {
     trades[scenario] = priceEpisodes(generated.episodes, bps, config.capital).map((row) => ({ ...row, scenario }));
