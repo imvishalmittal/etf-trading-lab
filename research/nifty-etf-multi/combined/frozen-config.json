@@ -1,12 +1,13 @@
 {
-  "researchId": "NIFTY-ETF-MULTI-COMBINED-1",
+  "researchId": "NIFTY-ETF-MULTI-UNIFIED-1",
   "frozenAt": "2026-09-14",
-  "classification": "combined_exploratory_backtest",
+  "classification": "unified_run_separate_periods",
   "capital": 50000,
-  "period": {
+  "periods": {
     "warmupStart": "2018-01-01",
-    "performanceStart": "2020-01-01",
-    "performanceEnd": "2026-09-11"
+    "discovery": ["2020-01-01", "2024-12-31"],
+    "validation": ["2025-01-01", "2025-12-31"],
+    "holdout": ["2026-01-01", "2026-09-11"]
   },
   "universe": ["NIFTYBEES", "BANKBEES", "JUNIORBEES", "ITBEES", "GOLDBEES"],
   "equityUniverse": ["NIFTYBEES", "BANKBEES", "JUNIORBEES", "ITBEES"],
@@ -32,22 +33,42 @@
   },
   "bootstrap": { "resamples": 5000, "seed": 20260914, "lowerConfidence": 0.95 },
   "gates": {
-    "minimumEpisodes": 25,
-    "maximumRejectedActionRate": 0.02,
-    "minimumNormalNetPnl": 0,
-    "minimumNormalProfitFactor": 1.2,
-    "minimumStressNetPnl": 0,
-    "minimumStressProfitFactor": 1.05,
-    "minimumSevereNetPnl": 0,
-    "maximumDrawdown": 10000,
-    "minimumProfitableCalendarSlices": 5,
-    "minimumProfitableMonthRate": 0.55,
-    "minimumRolling24MonthPnl": 0,
-    "minimumBootstrapLowerMeanPnl": 0,
-    "maximumSingleYearPositiveContribution": 0.5,
-    "maximumTopWinningDecileContribution": 0.6,
-    "maximumAllocation": 50000,
-    "minimumDrawdownReductionVersusParent": 0.25
+    "discovery": {
+      "minimumEpisodes": 25,
+      "maximumRejectedActionRate": 0.02,
+      "minimumNormalNetPnl": 0,
+      "minimumNormalProfitFactor": 1.2,
+      "minimumStressNetPnl": 0,
+      "minimumStressProfitFactor": 1.05,
+      "minimumSevereNetPnl": 0,
+      "maximumDrawdown": 10000,
+      "minimumProfitableYears": 3,
+      "minimumProfitableMonthRate": 0.55,
+      "minimumBootstrapLowerMeanPnl": 0,
+      "maximumSingleYearPositiveContribution": 0.5,
+      "maximumTopWinningDecileContribution": 0.6
+    },
+    "validation": {
+      "minimumEpisodes": 5,
+      "minimumNormalNetPnl": 0,
+      "minimumNormalProfitFactor": 1.1,
+      "minimumStressNetPnl": 0,
+      "minimumSevereNetPnl": 0,
+      "maximumDrawdown": 5000,
+      "minimumProfitableMonthRate": 0.5
+    },
+    "holdout": {
+      "minimumEpisodes": 3,
+      "minimumNormalNetPnl": 0,
+      "minimumStressNetPnl": 0,
+      "minimumSevereNetPnl": 0,
+      "maximumDrawdown": 5000
+    },
+    "wholeStudy": {
+      "minimumEpisodes": 25,
+      "maximumAllocation": 50000,
+      "minimumDrawdownReductionVersusParent": 0.25
+    }
   },
   "sourceArtifacts": {
     "discovery": {
@@ -62,7 +83,7 @@
     }
   },
   "statuses": {
-    "pass": "COMBINED_RESEARCH_CANDIDATE_NOT_AUTHORIZED",
-    "fail": "COMBINED_RESEARCH_REJECTED"
+    "pass": "HISTORICAL_STAGED_SUPPORT_NOT_AUTHORIZED",
+    "fail": "HISTORICAL_STAGED_REJECTED"
   }
 }
