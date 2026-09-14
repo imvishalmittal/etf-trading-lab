@@ -4,7 +4,8 @@
 - Data acquisition: **COMPLETE — INTEGRITY PASSED**
 - Strategy definitions: **FROZEN — RETURNS NOT YET CALCULATED**
 - Candidates: `XR1` weekly rotation, `MR1` oversold pullback, `BO1` breakout
-- Discovery: **READY, NOT YET RUN**
+- Deterministic engine: **IMPLEMENTED; 57 TESTS PASS LOCALLY**
+- Discovery: **AUTHORITATIVE GITHUB ACTIONS RUN PENDING**
 - Validation: **SEALED**
 - Holdout: **SEALED**
 - Paper/live trading: **NOT AUTHORIZED**

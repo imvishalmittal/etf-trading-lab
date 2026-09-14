@@ -1,0 +1,55 @@
+name: Multi-ETF - Frozen short-term discovery
+on:
+  pull_request:
+    paths:
+      - 'src/nifty-etf-multi/**'
+      - 'scripts/run-nifty-etf-multi.mjs'
+      - 'tests/nifty-etf-multi/**'
+      - 'research/nifty-etf-multi/frozen-config.json'
+      - '.github/workflows/nifty-etf-multi-discovery.yml'
+      - 'package.json'
+  push:
+    branches: [main]
+    paths: ['research/nifty-etf-multi/DISCOVERY_TRIGGER']
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+jobs:
+  tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22 }
+      - run: npm test
+  discovery:
+    if: github.event_name != 'pull_request'
+    needs: tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22 }
+      - name: Download frozen checksummed source artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: nifty-etf-multi-discovery-data-a8bfed067d5f5ebfc08321d8862c79d05b8ed0ac
+          path: source-data
+          github-token: ${{ github.token }}
+          repository: imvishalmittal/etf-trading-lab
+          run-id: 34772431861
+      - name: Verify frozen source artifact
+        run: cd source-data && sha256sum -c checksums.sha256
+      - name: Run frozen discovery
+        run: npm run research:nifty-etf-multi:discovery -- --data-dir=source-data
+      - name: Verify result artifact
+        run: cd artifacts/nifty-etf-multi/discovery && sha256sum -c checksums.sha256
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nifty-etf-multi-discovery-${{ github.sha }}
+          path: artifacts/nifty-etf-multi/discovery
+          if-no-files-found: error
+          retention-days: 30

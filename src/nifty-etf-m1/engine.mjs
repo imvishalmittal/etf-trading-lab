@@ -186,7 +186,7 @@ export function summarizeTrades(trades, modelCapital) {
   const breakeven = values.length - wins.length - losses.length;
   const grossProfit = sum(wins), grossLoss = Math.abs(sum(losses)), netPnl = sum(values);
   const dd = drawdown(values), streaks = negativeStreaks(values);
-  const feeKeys = ['brokerage', 'stt', 'transactionCharges', 'sebiCharges', 'stampDuty', 'ipft', 'gst', 'fees', 'slippageCost'];
+  const feeKeys = ['brokerage', 'stt', 'transactionCharges', 'sebiCharges', 'stampDuty', 'ipft', 'gst', 'dpCharge', 'fees', 'slippageCost'];
   const fees = Object.fromEntries(feeKeys.map((key) => [key, round(sum(trades.map((t) => t[key]))) ]));
   const ladderUsage = Object.fromEntries([1, 2, 4, 8].map((level) => [String(level), trades.filter((t) => t.multiplier === level).length]));
   return {

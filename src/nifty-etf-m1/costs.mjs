@@ -60,7 +60,7 @@ export function calculateIntradayCosts({ entryReference, exitReference, quantity
   };
 }
 
-export function calculateDeliveryCosts({ entryReference, exitReference, quantity, slippageBps }) {
+export function calculateDeliveryCosts({ entryReference, exitReference, quantity, slippageBps, equityOriented = true }) {
   finitePositive(entryReference, 'entryReference');
   finitePositive(exitReference, 'exitReference');
   if (!Number.isInteger(quantity) || quantity <= 0) throw new Error('quantity must be a positive integer');
@@ -72,7 +72,7 @@ export function calculateDeliveryCosts({ entryReference, exitReference, quantity
   const turnover = buyTurnover + sellTurnover;
   const brokerage = 0;
   const sttBuy = buyTurnover * DELIVERY_COST_SCHEDULE.sttBuyRate;
-  const sttSell = sellTurnover * DELIVERY_COST_SCHEDULE.sttSellRate;
+  const sttSell = equityOriented ? sellTurnover * DELIVERY_COST_SCHEDULE.sttSellRate : 0;
   const stt = sttBuy + sttSell;
   const transactionChargesBuy = buyTurnover * DELIVERY_COST_SCHEDULE.nseTransactionRate;
   const transactionChargesSell = sellTurnover * DELIVERY_COST_SCHEDULE.nseTransactionRate;
