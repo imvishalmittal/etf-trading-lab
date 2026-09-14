@@ -105,7 +105,10 @@ Every implemented strategy family is retired, rejected, or blocked. Nothing is a
 | Follow-ups T1/G1/P1 | **DISCOVERY_REJECTED** | Intraday variants lost; profitable P1 underperformed passive NIFTYBEES materially |
 | EDGE1 S1/S2/I1 | **DATA_BLOCKED** | 15.04% of exact 09:15 ETF opening gaps failed the frozen integrity check |
 | EDGE2 ST1/OR1/VP1 | **DISCOVERY_REJECTED** | Valid post-open data, but all three candidates lost after realistic execution costs |
+| Multi-ETF XR1/MR1/BO1 | **DISCOVERY_REJECTED** | XR1 was profitable but concentrated; 2025–2026 did not confirm XR1 or BO1 |
+| Unified XR2/BO2 | **HISTORICAL_STAGED_REJECTED** | XR2 reduced drawdown but lost in 2026; BO2 failed 2025 and 2026 |
+| XR3 defensive rotation | **IN PROGRESS** | Frozen post-result hypothesis; no historical result yet |
 
-The modern studies use genuine Zerodha Kite minute candles, explicit NSE equity costs, adverse 2/5/10-bps-per-side slippage, deterministic ledgers, checksummed artifacts, and separately sealed discovery/validation/holdout workflows. No candidate passed discovery, so validation and holdout never opened.
+The modern studies use genuine Zerodha Kite data, explicit NSE equity costs, adverse 2/5/10-bps-per-side slippage, deterministic ledgers, and checksummed artifacts. The latest multi-ETF studies calculate discovery, validation, and holdout in one workflow while reporting and gating each period separately.
 
 See [the consolidated result matrix](research/RESEARCH_SUMMARY.md), individual frozen specifications and evidence under `research/`, and the full chronological [decision log](ANALYSIS.md). No backtest result is permission or advice to trade real money.

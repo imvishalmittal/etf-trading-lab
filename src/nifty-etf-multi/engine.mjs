@@ -10,6 +10,16 @@ const valid = (row) => row && Number.isFinite(row.open) && Number.isFinite(row.h
 const dateOf = (row) => String(row.timestamp ?? row.date).slice(0, 10);
 const equityOriented = (symbol) => symbol !== 'GOLDBEES';
 
+export function volatilityAt(rows, index, length) {
+  if (index < length) return null;
+  const returns = [];
+  for (let offset = index - length + 1; offset <= index; offset += 1) {
+    returns.push(rows[offset].close / rows[offset - 1].close - 1);
+  }
+  const average = mean(returns);
+  return Math.sqrt(mean(returns.map((value) => (value - average) ** 2)));
+}
+
 export function smaAt(rows, index, length) {
   if (index < length - 1) return null;
   return mean(rows.slice(index - length + 1, index + 1).map((row) => row.close));
@@ -63,6 +73,7 @@ function features(market, symbol, date) {
     row, index,
     sma5: smaAt(rows, index, 5), sma100: smaAt(rows, index, 100), sma200: smaAt(rows, index, 200),
     momentum63: index >= 63 ? row.close / rows[index - 63].close - 1 : null,
+    volatility20: volatilityAt(rows, index, 20),
     return3: index >= 3 ? row.close / rows[index - 3].close - 1 : null,
     rsi2: market.rsi2[symbol][index],
     prior20High: index >= 20 ? Math.max(...rows.slice(index - 20, index).map((value) => value.high)) : null,
@@ -72,7 +83,7 @@ function features(market, symbol, date) {
 
 const openFor = (market, symbol, date) => {
   const row = market.lookup[symbol].get(date)?.row;
-  return valid(row) ? row.open : null;
+  return valid(row) && Number(row.volume) > 0 ? row.open : null;
 };
 
 function episode(position, date, exitReference, exitReason, exitSignalDate = null) {
@@ -150,6 +161,70 @@ export function generateXR2(market, config, period) {
     else rejectedActions.push({ date, strategyId: 'XR2', reason: 'MISSING_PERIOD_END_CLOSE' });
   }
   return { episodes, rejectedActions, maximumSimultaneousPositions: rules.maximumHoldings, maximumTotalAllocation: rules.maximumHoldings * rules.allocationPerHolding };
+}
+
+export function generateXR3(market, config, period) {
+  const episodes = [], rejectedActions = [], positions = new Map(), decisions = [];
+  const rules = config.strategies.XR3;
+  const priorDate = market.calendar.filter((date) => date < period.start).at(-1);
+  let pending = null, previousWeek = priorDate ? isoWeek(priorDate) : null;
+  for (let calendarIndex = 0; calendarIndex < market.calendar.length; calendarIndex += 1) {
+    const date = market.calendar[calendarIndex];
+    if (date < period.start || date > period.end) continue;
+    if (pending) {
+      const targets = new Set(pending.targets), removed = [...positions.keys()].filter((symbol) => !targets.has(symbol));
+      const added = pending.targets.filter((symbol) => !positions.has(symbol));
+      const required = [...removed, ...added].map((symbol) => [symbol, openFor(market, symbol, date)]);
+      if (required.some(([, price]) => price === null)) rejectedActions.push({ date, strategyId: 'XR3', reason: 'MISSING_ROTATION_OPEN' });
+      else {
+        const prices = new Map(required);
+        for (const symbol of removed) {
+          episodes.push(episode(positions.get(symbol), date, prices.get(symbol), targets.size ? 'ROTATE' : 'CASH', pending.signalDate));
+          positions.delete(symbol);
+        }
+        for (const symbol of added) positions.set(symbol, {
+          strategyId: 'XR3', symbol, signalDate: pending.signalDate, entryDate: date,
+          entryReference: prices.get(symbol), allocationCapital: rules.allocationPerSleeve,
+        });
+      }
+      pending = null;
+    }
+    const week = isoWeek(date);
+    if (week !== previousWeek) {
+      previousWeek = week;
+      const nifty = features(market, 'NIFTYBEES', date);
+      const riskOn = Boolean(nifty && Number(nifty.row.volume) > 0 && nifty.sma200 !== null && nifty.row.close > nifty.sma200);
+      const equityChoices = riskOn ? config.equityUniverse.map((symbol) => ({ symbol, feature: features(market, symbol, date) }))
+        .filter(({ feature }) => feature && feature.sma100 !== null && feature.momentum63 !== null
+          && feature.volatility20 !== null && feature.volatility20 > 0
+          && Number(feature.row.volume) > 0 && feature.row.close > feature.sma100 && feature.momentum63 > 0)
+        .map((choice) => ({ ...choice, score: choice.feature.momentum63 / choice.feature.volatility20 }))
+        .sort((a, b) => b.score - a.score || a.symbol.localeCompare(b.symbol)) : [];
+      const gold = features(market, rules.defensiveSymbol, date);
+      const goldEligible = Boolean(gold && Number(gold.row.volume) > 0 && gold.sma100 !== null && gold.momentum63 !== null
+        && gold.row.close > gold.sma100 && gold.momentum63 > 0);
+      const targets = equityChoices.slice(0, rules.maximumEquityHoldings).map(({ symbol }) => symbol);
+      if (goldEligible) targets.push(rules.defensiveSymbol);
+      decisions.push({
+        signalDate: date, riskOn, goldEligible, targets: [...targets],
+        equityRanks: equityChoices.map(({ symbol, score }) => ({ symbol, score: round(score, 8) })),
+      });
+      if (calendarIndex + 1 < market.calendar.length && market.calendar[calendarIndex + 1] <= period.end) {
+        pending = { signalDate: date, targets };
+      }
+    }
+  }
+  const date = market.calendar.filter((value) => value >= period.start && value <= period.end).at(-1);
+  for (const position of positions.values()) {
+    const row = market.lookup[position.symbol].get(date)?.row;
+    if (valid(row)) episodes.push(episode(position, date, row.close, 'PERIOD_END', date));
+    else rejectedActions.push({ date, strategyId: 'XR3', reason: 'MISSING_PERIOD_END_CLOSE' });
+  }
+  return {
+    episodes, rejectedActions, decisions,
+    maximumSimultaneousPositions: rules.maximumEquityHoldings + 1,
+    maximumTotalAllocation: (rules.maximumEquityHoldings + 1) * rules.allocationPerSleeve,
+  };
 }
 
 function selectMR1(market, config, date) {
@@ -292,7 +367,9 @@ function summarizeScenario(trades, market, period, config) {
 }
 
 export function runCandidate(id, market, config, period) {
-  const generated = id === 'XR1' ? generateXR1(market, config, period) : id === 'XR2' ? generateXR2(market, config, period) : generateDailyCandidate(id, market, config, period);
+  const generated = id === 'XR1' ? generateXR1(market, config, period)
+    : id === 'XR2' ? generateXR2(market, config, period)
+      : id === 'XR3' ? generateXR3(market, config, period) : generateDailyCandidate(id, market, config, period);
   const trades = {}, summary = {};
   for (const [scenario, bps] of Object.entries(config.slippageScenarios)) {
     trades[scenario] = priceEpisodes(generated.episodes, bps, config.capital).map((row) => ({ ...row, scenario }));

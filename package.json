@@ -24,7 +24,9 @@
     "research:nifty-etf-multi:data": "node scripts/acquire-nifty-etf-multi.mjs",
     "research:nifty-etf-multi:discovery": "node scripts/run-nifty-etf-multi.mjs --stage=discovery",
     "research:nifty-etf-multi:oos": "node scripts/run-nifty-etf-multi-oos.mjs",
-    "research:nifty-etf-multi:unified": "node scripts/run-nifty-etf-multi-unified.mjs"
+    "research:nifty-etf-multi:unified": "node scripts/run-nifty-etf-multi-unified.mjs",
+    "research:nifty-etf-xr3:data": "node scripts/acquire-nifty-etf-xr3.mjs",
+    "research:nifty-etf-xr3:run": "node scripts/run-nifty-etf-xr3.mjs"
   },
   "engines": {
     "node": ">=22"

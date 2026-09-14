@@ -1,6 +1,6 @@
 # ETF Trading Lab — consolidated research summary
 
-Last updated: 13 September 2026
+Last updated: 14 September 2026
 
 ## Current conclusion
 
@@ -16,6 +16,9 @@ Last updated: 13 September 2026
 | EDGE1 exact-open research | 2020–2024 | S1, S2, I1 | `DATA_BLOCKED` | [Run 34762446008](https://github.com/imvishalmittal/etf-trading-lab/actions/runs/34762446008) |
 | EDGE2 post-open research | 2020–2024 | ST1, OR1, VP1 | All `DISCOVERY_REJECTED` | [Run 34768354081](https://github.com/imvishalmittal/etf-trading-lab/actions/runs/34768354081) |
 | Multi-ETF short-term research | 2020–2024 | XR1, MR1, BO1; Q0 benchmark | All candidates `DISCOVERY_REJECTED` | [Run 34794327066](https://github.com/imvishalmittal/etf-trading-lab/actions/runs/34794327066) |
+| Multi-ETF OOS diagnostic | 2025 and 2026 YTD | Unchanged XR1 and BO1 | Both `OOS_DOES_NOT_CONFIRM` | [Run 34800068186](https://github.com/imvishalmittal/etf-trading-lab/actions/runs/34800068186) |
+| Unified multi-ETF follow-up | 2020–2024 / 2025 / 2026 YTD | XR2 and BO2 | Both `HISTORICAL_STAGED_REJECTED` | [Run 34801630148](https://github.com/imvishalmittal/etf-trading-lab/actions/runs/34801630148) |
+| XR3 defensive rotation | Same separately evaluated periods | XR3; XR2/Q0 controls | **IN PROGRESS — NO RESULT YET** | [Frozen specification](nifty-etf-xr3/FROZEN_SPEC.md) |
 
 ## Comparable economic results
 
@@ -35,6 +38,8 @@ All rupee figures use ₹50,000 model capital and normal 2-bps-per-side slippage
 | Multi-ETF MR1 pullback | 59 episodes | −₹9,515.99 | 0.774 | ₹24,314.92 | Reject |
 | Multi-ETF BO1 breakout | 28 episodes | ₹32,205.03 | 2.666 | ₹14,937.44 | Reject: drawdown, bootstrap, benchmark |
 | Multi-ETF Q0 benchmark | Full-period exposure | ₹52,386.24 | Benchmark | ₹18,443.72 | Comparison only |
+| XR2 combined context | 2020–2026, 112 episodes | ₹65,549.78 | 2.553 | ₹16,300.34 | Reject: 2026 holdout and stage drawdown gates |
+| BO2 combined context | 2020–2026, 35 episodes | ₹30,716.98 | 2.311 | ₹11,030.49 | Reject: validation and holdout |
 
 EDGE1 P&L is intentionally excluded from this table because its exact-open coverage failed.
 
@@ -45,7 +50,7 @@ EDGE1 P&L is intentionally excluded from this table because its exact-open cover
 - NIFTY signal CSV SHA-256: `9f3258b116a54c7c4233f58851fccca793920b7c4419a35093b3c588153b7727`.
 - Every modern strategy used whole units, fixed model-capital constraints, explicit fee decomposition and adverse 2/5/10-bps slippage.
 - Signals were causal and next-bar executable; stop ambiguity was handled conservatively.
-- Discovery, validation and holdout were separately gated. No candidate opened validation.
+- Discovery, validation and holdout remain separately gated. For XR2/BO2 and later candidates, all periods are calculated in one run but no combined total can rescue a failed period.
 - Complete trade ledgers, summaries, gate decisions and checksums are retained in run artifacts and evidence directories.
 - The frozen multi-ETF daily dataset passed its integrity audit: 1,733 rows each for NIFTYBEES, BANKBEES and JUNIORBEES; 1,732 for GOLDBEES; and 1,120 for ITBEES from its 1 July 2020 listing. Artifact `10322457623` has ZIP SHA-256 `1ba7d90cd83e662ba0c2946a80c5493892411c85475d9375483ea87f788086c8`.
 
@@ -59,6 +64,6 @@ EDGE1 P&L is intentionally excluded from this table because its exact-open cover
 
 Stopping is part of the research design. Rules are not changed in response to outcomes, and failed candidates are not allowed into validation or holdout.
 
-## Defensible next direction
+## Current next direction
 
-Do not optimize thresholds or loosen XR1's gate on the now-inspected 2020–2024 sample. XR1 is the strongest research lead, but it is not validated and is not authorized for trading. A future study must obtain a genuinely independent sample or predeclare a structurally different hypothesis before inspecting results. Cross-sectional stock research additionally requires licensed point-in-time constituent history to avoid survivorship bias.
+XR3 is the single frozen follow-up to XR2. It tests whether an explicit NIFTYBEES 200-SMA risk regime, volatility-adjusted top-two equity selection, and a separate gold/cash sleeve address the observed 2026 weakness. Because XR3 was designed after viewing 2025/2026, even a historical pass is not independent confirmation; prospective no-order observation would still be required. If XR3 fails, further ETF parameter tuning should stop and any stock-level pivot must first obtain licensed point-in-time constituent history.
