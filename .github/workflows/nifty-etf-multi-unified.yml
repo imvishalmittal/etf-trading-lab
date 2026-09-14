@@ -1,0 +1,59 @@
+name: Multi-ETF - Unified XR2 BO2 staged research
+on:
+  pull_request:
+    paths:
+      - 'src/nifty-etf-multi/**'
+      - 'scripts/run-nifty-etf-multi-unified.mjs'
+      - 'tests/nifty-etf-multi/**'
+      - 'research/nifty-etf-multi/combined/**'
+      - '.github/workflows/nifty-etf-multi-unified.yml'
+      - 'package.json'
+  push:
+    branches: [main]
+    paths: ['research/nifty-etf-multi/combined/UNIFIED_TRIGGER']
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+jobs:
+  tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22 }
+      - run: npm test
+  unified:
+    if: github.event_name != 'pull_request'
+    needs: tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22 }
+      - name: Download verified source artifacts
+        run: |
+          mkdir -p /tmp/multi-source /tmp/multi-oos
+          gh api /repos/${{ github.repository }}/actions/artifacts/10322457623/zip > /tmp/multi-source.zip
+          gh api /repos/${{ github.repository }}/actions/artifacts/10331226835/zip > /tmp/multi-oos.zip
+          unzip -q /tmp/multi-source.zip -d /tmp/multi-source
+          unzip -q /tmp/multi-oos.zip -d /tmp/multi-oos
+      - name: Verify source artifact members
+        run: |
+          (cd /tmp/multi-source && sha256sum -c checksums.sha256)
+          (cd /tmp/multi-oos && sha256sum -c checksums.sha256)
+      - name: Run all stages together
+        run: npm run research:nifty-etf-multi:unified -- --source-data-dir=/tmp/multi-source --oos-data-dir=/tmp/multi-oos
+      - name: Verify result artifact
+        if: success()
+        run: cd artifacts/nifty-etf-multi/unified && sha256sum -c checksums.sha256
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nifty-etf-multi-unified-${{ github.sha }}
+          path: artifacts/nifty-etf-multi/unified
+          if-no-files-found: error
+          retention-days: 30

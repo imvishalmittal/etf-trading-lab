@@ -26,8 +26,9 @@ The original XR1 and BO1 `DISCOVERY_REJECTED` and `OOS_DOES_NOT_CONFIRM` decisio
 - Whole ETF units only; no leverage or short selling.
 - Every buy and sell includes the frozen delivery cost schedule and adverse slippage of 2, 5, and 10 basis points per side.
 - Missing or invalid required execution bars reject the action; no later favorable price is substituted.
-- Strategy state continues across period boundaries. Period returns use daily mark-to-market attribution, so open positions are not artificially liquidated or reset on 31 December 2024 or 31 December 2025.
-- Positions open at the final boundary are liquidated at the 11 September 2026 close solely for research valuation.
+- Each discovery, validation, and holdout section is calculated independently from the shared historical warm-up and is valued at its own period end. This preserves standalone stage metrics in the same manner as the original research engines.
+- A separate continuous 2020–2026 calculation is produced only for contextual comparison; it does not determine any stage result.
+- Positions open at a research boundary are liquidated at that boundary close solely for research valuation.
 
 ## Controls
 

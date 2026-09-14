@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 
 import { calculateDeliveryCosts } from '../../src/nifty-etf-m1/costs.mjs';
-import { affordableQuantity, evaluateOosCandidate, generateDailyCandidate, generateXR1, markToMarket, prepareMarket, rsiWilder, smaAt } from '../../src/nifty-etf-multi/engine.mjs';
+import { affordableQuantity, evaluateOosCandidate, generateDailyCandidate, generateXR1, generateXR2, markToMarket, prepareMarket, rsiWilder, smaAt } from '../../src/nifty-etf-multi/engine.mjs';
 
 const dates = (count, start = '2019-01-01') => Array.from({ length: count }, (_, index) => { const date = new Date(`${start}T00:00:00Z`); date.setUTCDate(date.getUTCDate() + index); return date.toISOString().slice(0, 10); });
 const rows = (values, start) => dates(values.length, start).map((date, index) => ({ timestamp: `${date}T00:00:00+05:30`, open: values[index], high: values[index] + 1, low: values[index] - 1, close: values[index], volume: 1000 }));
@@ -59,6 +59,27 @@ test('XR1 does not create artificial turnover when the weekly winner is unchange
   assert.equal(result.episodes[0].symbol, 'NIFTYBEES');
   assert.ok(result.episodes[0].entryDate >= '2020-04-21');
   assert.equal(result.episodes[0].exitReason, 'PERIOD_END');
+});
+
+test('XR2 holds at most two leaders with ₹25,000 allocation each', () => {
+  const values = Array.from({ length: 250 }, (_, index) => 100 + index);
+  const input = Object.fromEntries(config.universe.map((symbol, rank) => [symbol, rows(values.map((_, index) => 100 + index * (1 - rank * 0.1)), '2020-01-01')]));
+  const market = prepareMarket(input, config.universe), period = { start: '2020-08-01', end: dates(250, '2020-01-01').at(-1) };
+  const result = generateXR2(market, { ...config, strategies: { ...config.strategies, XR2: { maximumHoldings: 2, allocationPerHolding: 25000 } } }, period);
+  assert.equal(result.episodes.length, 2);
+  assert.ok(result.episodes.every((trade) => trade.allocationCapital === 25000));
+  assert.equal(result.maximumSimultaneousPositions, 2);
+  assert.equal(result.maximumTotalAllocation, 50000);
+});
+
+test('BO2 suppresses a breakout while NIFTYBEES is below its 200-session SMA', () => {
+  const falling = Array.from({ length: 240 }, (_, index) => 400 - index);
+  const rising = Array.from({ length: 240 }, (_, index) => 100 + index * 2);
+  const input = Object.fromEntries(config.universe.map((symbol) => [symbol, rows(symbol === 'NIFTYBEES' ? falling : rising, '2020-01-01')]));
+  const market = prepareMarket(input, config.universe), period = { start: '2020-08-01', end: dates(240, '2020-01-01').at(-1) };
+  const rules = { ...config, strategies: { ...config.strategies, BO2: { minimumPositiveBreadth: 2 } } };
+  assert.ok(generateDailyCandidate('BO1', market, rules, period).episodes.length > 0);
+  assert.equal(generateDailyCandidate('BO2', market, rules, period).episodes.length, 0);
 });
 
 test('mark-to-market drawdown sees losses before an episode closes', () => {
