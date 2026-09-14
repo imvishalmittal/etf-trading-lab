@@ -52,7 +52,12 @@ User-authorized unified-run follow-up:
 - Execution: **ALL PERIODS ALWAYS CALCULATED TOGETHER; NO SEPARATE GATED RUNS**
 - Protocol: **FROZEN BEFORE XR2/BO2 CALCULATION**
 - Combined summary: **CONTEXT ONLY; CANNOT OFFSET A FAILED PERIOD**
+- Authoritative unified run: **COMPLETE**
+- XR2: **HISTORICAL_STAGED_REJECTED**
+- BO2: **HISTORICAL_STAGED_REJECTED**
 - Interpretation if successful: **HISTORICAL SUPPORT ONLY; PROSPECTIVE PAPER OBSERVATION STILL REQUIRED**
 - Paper/live trading: **NOT AUTHORIZED**
 
-See the [combined frozen specification](combined/FROZEN_SPEC.md).
+See the [combined frozen specification](combined/FROZEN_SPEC.md) and [unified results](combined/RESULTS.md).
+
+Unified evidence: [run 34801630148](https://github.com/imvishalmittal/etf-trading-lab/actions/runs/34801630148), artifact `10330888668`, artifact digest `sha256:3d4c61bcfcd0d5a4fcc39c9ab029084c6c2dd8558eca668c1c56c4001d9d15f0`.
