@@ -15,7 +15,7 @@ Last updated: 13 September 2026
 | Follow-up research | 2020–2024 | T1, G1, P1; B1 benchmark | All candidates `DISCOVERY_REJECTED` | [Run 34750393260](https://github.com/imvishalmittal/etf-trading-lab/actions/runs/34750393260) |
 | EDGE1 exact-open research | 2020–2024 | S1, S2, I1 | `DATA_BLOCKED` | [Run 34762446008](https://github.com/imvishalmittal/etf-trading-lab/actions/runs/34762446008) |
 | EDGE2 post-open research | 2020–2024 | ST1, OR1, VP1 | All `DISCOVERY_REJECTED` | [Run 34768354081](https://github.com/imvishalmittal/etf-trading-lab/actions/runs/34768354081) |
-| Multi-ETF data acquisition | 2018–2024 | NIFTYBEES, BANKBEES, JUNIORBEES, ITBEES, GOLDBEES | `DATA_READY`; strategies not yet calculated | [Run 34772431861](https://github.com/imvishalmittal/etf-trading-lab/actions/runs/34772431861) |
+| Multi-ETF short-term research | 2020–2024 | XR1, MR1, BO1; Q0 benchmark | All candidates `DISCOVERY_REJECTED` | [Run 34794327066](https://github.com/imvishalmittal/etf-trading-lab/actions/runs/34794327066) |
 
 ## Comparable economic results
 
@@ -31,6 +31,10 @@ All rupee figures use ₹50,000 model capital and normal 2-bps-per-side slippage
 | EDGE2 ST1 pullback | 17 trades | −₹709.26 | 0.876 | ₹2,688.53 | Reject |
 | EDGE2 OR1 breakout | 301 trades | −₹15,354.39 | 0.513 | ₹16,031.14 | Decisive reject |
 | EDGE2 VP1 VWAP pullback | 23 trades | −₹1,885.42 | 0.246 | ₹2,050.24 | Reject |
+| Multi-ETF XR1 weekly rotation | 55 episodes | ₹66,463.94 | 2.552 | ₹9,117.52 | Reject: 51% single-year concentration |
+| Multi-ETF MR1 pullback | 59 episodes | −₹9,515.99 | 0.774 | ₹24,314.92 | Reject |
+| Multi-ETF BO1 breakout | 28 episodes | ₹32,205.03 | 2.666 | ₹14,937.44 | Reject: drawdown, bootstrap, benchmark |
+| Multi-ETF Q0 benchmark | Full-period exposure | ₹52,386.24 | Benchmark | ₹18,443.72 | Comparison only |
 
 EDGE1 P&L is intentionally excluded from this table because its exact-open coverage failed.
 
@@ -51,9 +55,10 @@ EDGE1 P&L is intentionally excluded from this table because its exact-open cover
 - P1: profitable, but failed the frozen benchmark-relative gate.
 - EDGE1: required opening prices failed the predeclared integrity standard.
 - EDGE2: data was valid, but all candidates failed economic and stability gates.
+- Multi-ETF: MR1 was uneconomic; BO1 failed drawdown, bootstrap and benchmark gates; XR1 failed the predeclared single-year concentration gate by one percentage point despite otherwise strong results.
 
 Stopping is part of the research design. Rules are not changed in response to outcomes, and failed candidates are not allowed into validation or holdout.
 
 ## Defensible next direction
 
-Do not optimize more NIFTYBEES thresholds on the already-inspected 2020–2024 discovery sample. The broader liquid ETF universe is now frozen and its discovery data is ready. The next step is to predeclare short-term strategy hypotheses before calculating any returns. Cross-sectional stock research additionally requires licensed point-in-time constituent history to avoid survivorship bias.
+Do not optimize thresholds or loosen XR1's gate on the now-inspected 2020–2024 sample. XR1 is the strongest research lead, but it is not validated and is not authorized for trading. A future study must obtain a genuinely independent sample or predeclare a structurally different hypothesis before inspecting results. Cross-sectional stock research additionally requires licensed point-in-time constituent history to avoid survivorship bias.
