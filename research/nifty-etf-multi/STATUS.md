@@ -4,7 +4,7 @@
 - Data acquisition: **COMPLETE — INTEGRITY PASSED**
 - Strategy definitions: **FROZEN — RETURNS NOT YET CALCULATED**
 - Candidates: `XR1` weekly rotation, `MR1` oversold pullback, `BO1` breakout
-- Deterministic engine: **IMPLEMENTED; 57 TESTS PASS**
+- Deterministic engine: **IMPLEMENTED; 58 TESTS PASS**
 - Discovery: **XR1, MR1 AND BO1 — DISCOVERY_REJECTED**
 - Validation: **SEALED**
 - Holdout: **SEALED**
@@ -34,5 +34,10 @@ User-authorized post-selection OOS diagnostic for unchanged XR1 and BO1:
 
 - Protocol: **FROZEN BEFORE 2025/2026 ACQUISITION**
 - Performance: 2025 and 2026 YTD, reported separately and continuously combined
+- Data acquisition and integrity: **COMPLETE — PASSED**
+- XR1 verdict: **OOS_DOES_NOT_CONFIRM**
+- BO1 verdict: **OOS_DOES_NOT_CONFIRM**
 - Original discovery verdict: **UNCHANGED**
 - Paper/live trading: **NOT AUTHORIZED**
+
+Authoritative OOS evidence: [run 34800068186](https://github.com/imvishalmittal/etf-trading-lab/actions/runs/34800068186), artifact `10331226835`, artifact digest `sha256:8009d87f2cc35a08b6d886c80e1353d15946300af15577e896019e2075b864f7`. See [OOS results](oos/RESULTS.md).
