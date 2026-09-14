@@ -1,0 +1,54 @@
+name: Multi-ETF - XR1 BO1 post-selection OOS
+on:
+  pull_request:
+    paths:
+      - 'src/nifty-etf-multi/**'
+      - 'scripts/run-nifty-etf-multi-oos.mjs'
+      - 'tests/nifty-etf-multi/**'
+      - 'research/nifty-etf-multi/oos/**'
+      - '.github/workflows/nifty-etf-multi-oos.yml'
+      - 'package.json'
+  push:
+    branches: [main]
+    paths: ['research/nifty-etf-multi/oos/OOS_TRIGGER']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22 }
+      - run: npm test
+  oos:
+    if: github.event_name != 'pull_request'
+    needs: tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22 }
+      - name: Resolve read-only Kite session
+        env:
+          KITE_API_KEY: ${{ secrets.KITE_API_KEY }}
+          KITE_API_SECRET: ${{ secrets.KITE_API_SECRET }}
+          KITE_REQUEST_TOKEN: ${{ secrets.KITE_REQUEST_TOKEN }}
+          KITE_ACCESS_TOKEN: ${{ secrets.KITE_ACCESS_TOKEN }}
+        run: node scripts/resolve-kite-token.mjs
+      - name: Run frozen post-selection OOS diagnostic
+        env:
+          KITE_API_KEY: ${{ secrets.KITE_API_KEY }}
+        run: npm run research:nifty-etf-multi:oos
+      - name: Verify result artifact
+        if: success()
+        run: cd artifacts/nifty-etf-multi/oos && sha256sum -c checksums.sha256
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nifty-etf-multi-oos-${{ github.sha }}
+          path: artifacts/nifty-etf-multi/oos
+          if-no-files-found: error
+          retention-days: 30

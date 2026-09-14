@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 
 import { calculateDeliveryCosts } from '../../src/nifty-etf-m1/costs.mjs';
-import { affordableQuantity, generateDailyCandidate, generateXR1, markToMarket, prepareMarket, rsiWilder, smaAt } from '../../src/nifty-etf-multi/engine.mjs';
+import { affordableQuantity, evaluateOosCandidate, generateDailyCandidate, generateXR1, markToMarket, prepareMarket, rsiWilder, smaAt } from '../../src/nifty-etf-multi/engine.mjs';
 
 const dates = (count, start = '2019-01-01') => Array.from({ length: count }, (_, index) => { const date = new Date(`${start}T00:00:00Z`); date.setUTCDate(date.getUTCDate() + index); return date.toISOString().slice(0, 10); });
 const rows = (values, start) => dates(values.length, start).map((date, index) => ({ timestamp: `${date}T00:00:00+05:30`, open: values[index], high: values[index] + 1, low: values[index] - 1, close: values[index], volume: 1000 }));
@@ -68,4 +68,16 @@ test('mark-to-market drawdown sees losses before an episode closes', () => {
   const curve = markToMarket([trade], market, market.calendar, 0);
   assert.ok(curve[1].pnl < 0);
   assert.equal(curve[2].pnl, 100);
+});
+
+test('OOS confirmation requires both years and all slippage slices to be positive', () => {
+  const scenario = (yearly, netPnl = 3000) => ({ trades: 12, yearly, netPnl, maximumDrawdown: 1000, maximumDeployedCapital: 49990, recoveryFactor: 3 });
+  const result = { rejectedActions: [], summary: { normal: scenario({ 2025: 1000, 2026: 2000 }), stress: scenario({ 2025: 900, 2026: 1800 }, 2700), severe: scenario({ 2025: 800, 2026: 1600 }, 2400) } };
+  const benchmark = { summary: { normal: { netPnl: 2000, maximumDrawdown: 3000, recoveryFactor: 0.67 } } };
+  const oos = { gates: { minimumEpisodes: 10, maximumRejectedActionRate: 0.02, minimumSliceNetPnl: 0, minimumCombinedNetPnl: 0, maximumDrawdown: 10000, maximumAllocation: 50000, maximumSimultaneousPositions: 1 } };
+  assert.equal(evaluateOosCandidate('XR1', result, benchmark, 400, oos).decision, 'SUPPORT');
+  result.summary.severe.yearly[2026] = -1;
+  const failed = evaluateOosCandidate('XR1', result, benchmark, 400, oos);
+  assert.equal(failed.decision, 'DOES_NOT_CONFIRM');
+  assert.ok(failed.failed.includes('severe_2026_net_pnl'));
 });
