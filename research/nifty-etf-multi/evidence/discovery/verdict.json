@@ -1,0 +1,16 @@
+{
+  "stage": "discovery",
+  "sourceRun": 34772431861,
+  "sourceArtifact": 10322457623,
+  "workflowRun": 34794327066,
+  "resultArtifact": 10328862790,
+  "artifactZipSha256": "c7ab6f23283cb11a72fd5ab53d15ad56c75b41ab52d65b576ff52759540cc94c",
+  "strategies": {
+    "XR1": { "status": "DISCOVERY_REJECTED", "netPnl": 66463.94, "profitFactor": 2.552272, "maximumDrawdown": 9117.52, "failed": ["single_year_concentration"] },
+    "MR1": { "status": "DISCOVERY_REJECTED", "netPnl": -9515.99, "profitFactor": 0.773529, "maximumDrawdown": 24314.92, "failed": ["normal_net_pnl", "normal_profit_factor", "stress_net_pnl", "severe_net_pnl", "maximum_drawdown", "profitable_years", "profitable_month_rate", "family_bootstrap_lower_mean", "single_year_concentration", "benchmark_relative"] },
+    "BO1": { "status": "DISCOVERY_REJECTED", "netPnl": 32205.03, "profitFactor": 2.665738, "maximumDrawdown": 14937.44, "failed": ["maximum_drawdown", "family_bootstrap_lower_mean", "benchmark_relative"] }
+  },
+  "validation": "SEALED",
+  "holdout": "SEALED",
+  "tradingAuthorized": false
+}

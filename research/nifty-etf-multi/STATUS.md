@@ -4,8 +4,8 @@
 - Data acquisition: **COMPLETE — INTEGRITY PASSED**
 - Strategy definitions: **FROZEN — RETURNS NOT YET CALCULATED**
 - Candidates: `XR1` weekly rotation, `MR1` oversold pullback, `BO1` breakout
-- Deterministic engine: **IMPLEMENTED; 57 TESTS PASS LOCALLY**
-- Discovery: **AUTHORITATIVE GITHUB ACTIONS RUN PENDING**
+- Deterministic engine: **IMPLEMENTED; 57 TESTS PASS**
+- Discovery: **XR1, MR1 AND BO1 — DISCOVERY_REJECTED**
 - Validation: **SEALED**
 - Holdout: **SEALED**
 - Paper/live trading: **NOT AUTHORIZED**
@@ -27,3 +27,5 @@ Authoritative acquisition evidence:
 | `GOLDBEES` | 2018-01-01 | 2024-12-31 | 1,732 | 0 |
 
 Integrity defects count duplicate dates, invalid OHLC, non-positive prices, zero-volume dates, and close-to-close moves above 15%. `ITBEES` begins at its actual 2020 listing; no pre-listing history was fabricated.
+
+Discovery evidence: [run 34794327066](https://github.com/imvishalmittal/etf-trading-lab/actions/runs/34794327066), artifact `10328862790`. XR1 failed only the frozen single-year concentration gate; MR1 and BO1 failed multiple economic or robustness gates. See [discovery results](evidence/discovery/RESULTS.md).
