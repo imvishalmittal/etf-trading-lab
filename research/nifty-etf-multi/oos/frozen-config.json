@@ -1,0 +1,24 @@
+{
+  "researchId": "NIFTY-ETF-MULTI-OOS-1",
+  "frozenAt": "2026-09-14",
+  "classification": "post-selection out-of-sample diagnostic",
+  "baseSpecificationCommit": "cd59d9e951deef723c31b3e78430cc15c1955ad0",
+  "selectedCandidates": ["XR1", "BO1"],
+  "dataPeriod": ["2024-06-01", "2026-09-11"],
+  "performancePeriod": ["2025-01-01", "2026-09-11"],
+  "reportSlices": {
+    "2025": ["2025-01-01", "2025-12-31"],
+    "2026Ytd": ["2026-01-01", "2026-09-11"]
+  },
+  "gates": {
+    "minimumEpisodes": 10,
+    "maximumRejectedActionRate": 0.02,
+    "minimumSliceNetPnl": 0,
+    "minimumCombinedNetPnl": 0,
+    "maximumDrawdown": 10000,
+    "maximumAllocation": 50000,
+    "maximumSimultaneousPositions": 1
+  },
+  "successStatus": "OOS_CONFIRMATORY_SUPPORT_NOT_AUTHORIZED",
+  "failureStatus": "OOS_DOES_NOT_CONFIRM"
+}
