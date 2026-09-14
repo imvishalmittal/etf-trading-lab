@@ -21,7 +21,8 @@
     "research:nifty-etf-edge2:discovery": "node scripts/run-nifty-etf-edge2.mjs --stage=discovery",
     "research:nifty-etf-edge2:validation": "node scripts/run-nifty-etf-edge2.mjs --stage=validation",
     "research:nifty-etf-edge2:holdout": "node scripts/run-nifty-etf-edge2.mjs --stage=holdout",
-    "research:nifty-etf-multi:data": "node scripts/acquire-nifty-etf-multi.mjs"
+    "research:nifty-etf-multi:data": "node scripts/acquire-nifty-etf-multi.mjs",
+    "research:nifty-etf-multi:discovery": "node scripts/run-nifty-etf-multi.mjs --stage=discovery"
   },
   "engines": {
     "node": ">=22"
