@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 
 import { calculateDeliveryCosts } from '../../src/nifty-etf-m1/costs.mjs';
-import { affordableQuantity, evaluateOosCandidate, generateDailyCandidate, generateXR1, generateXR2, markToMarket, prepareMarket, rsiWilder, smaAt } from '../../src/nifty-etf-multi/engine.mjs';
+import { affordableQuantity, evaluateOosCandidate, generateDailyCandidate, generateXR1, generateXR2, generateXR3, markToMarket, prepareMarket, rsiWilder, smaAt, volatilityAt } from '../../src/nifty-etf-multi/engine.mjs';
 
 const dates = (count, start = '2019-01-01') => Array.from({ length: count }, (_, index) => { const date = new Date(`${start}T00:00:00Z`); date.setUTCDate(date.getUTCDate() + index); return date.toISOString().slice(0, 10); });
 const rows = (values, start) => dates(values.length, start).map((date, index) => ({ timestamp: `${date}T00:00:00+05:30`, open: values[index], high: values[index] + 1, low: values[index] - 1, close: values[index], volume: 1000 }));
@@ -70,6 +70,69 @@ test('XR2 holds at most two leaders with ₹25,000 allocation each', () => {
   assert.ok(result.episodes.every((trade) => trade.allocationCapital === 25000));
   assert.equal(result.maximumSimultaneousPositions, 2);
   assert.equal(result.maximumTotalAllocation, 50000);
+});
+
+test('20-session volatility uses only completed close-to-close returns', () => {
+  const input = rows(Array.from({ length: 22 }, (_, index) => 100 + index));
+  assert.equal(volatilityAt(input, 19, 20), null);
+  const expectedReturns = Array.from({ length: 20 }, (_, index) => input[index + 1].close / input[index].close - 1);
+  const average = expectedReturns.reduce((sum, value) => sum + value, 0) / expectedReturns.length;
+  const expected = Math.sqrt(expectedReturns.reduce((sum, value) => sum + (value - average) ** 2, 0) / expectedReturns.length);
+  assert.equal(volatilityAt(input, 20, 20), expected);
+});
+
+test('XR3 uses two ₹16,500 equity sleeves plus independently eligible gold in risk-on', () => {
+  const universe = ['NIFTYBEES', 'BANKBEES', 'JUNIORBEES', 'ITBEES', 'GOLDBEES'];
+  const values = Array.from({ length: 270 }, (_, index) => 100 + index * 0.5 + Math.sin(index / 7));
+  const input = Object.fromEntries(universe.map((symbol, rank) => [symbol, rows(values.map((value, index) => value + index * rank * 0.08), '2019-01-01')]));
+  const market = prepareMarket(input, universe), period = { start: '2019-08-15', end: dates(270, '2019-01-01').at(-1) };
+  const rules = {
+    capital: 50000, universe, equityUniverse: universe.filter((symbol) => symbol !== 'GOLDBEES'),
+    strategies: { XR3: { maximumEquityHoldings: 2, defensiveSymbol: 'GOLDBEES', allocationPerSleeve: 16500 } },
+  };
+  const result = generateXR3(market, rules, period);
+  assert.ok(result.episodes.some((trade) => trade.symbol === 'GOLDBEES'));
+  assert.ok(result.decisions.some((decision) => decision.riskOn && decision.targets.length === 3));
+  assert.ok(result.decisions.every((decision) => decision.equityRanks.every((item, index, ranked) => index === 0 || ranked[index - 1].score >= item.score)));
+  assert.ok(result.episodes.every((trade) => trade.allocationCapital === 16500));
+  assert.ok(result.episodes.every((trade) => trade.entryDate > trade.signalDate));
+  assert.equal(result.maximumSimultaneousPositions, 3);
+  assert.equal(result.maximumTotalAllocation, 49500);
+});
+
+test('XR3 suppresses every equity sleeve in risk-off and may retain only eligible gold', () => {
+  const universe = ['NIFTYBEES', 'BANKBEES', 'JUNIORBEES', 'ITBEES', 'GOLDBEES'];
+  const falling = Array.from({ length: 270 }, (_, index) => 400 - index * 0.7 + Math.sin(index / 5));
+  const rising = Array.from({ length: 270 }, (_, index) => 100 + index * 0.5 + Math.sin(index / 7));
+  const input = Object.fromEntries(universe.map((symbol) => [symbol, rows(symbol === 'NIFTYBEES' ? falling : rising, '2019-01-01')]));
+  const market = prepareMarket(input, universe), period = { start: '2019-08-15', end: dates(270, '2019-01-01').at(-1) };
+  const rules = {
+    capital: 50000, universe, equityUniverse: universe.filter((symbol) => symbol !== 'GOLDBEES'),
+    strategies: { XR3: { maximumEquityHoldings: 2, defensiveSymbol: 'GOLDBEES', allocationPerSleeve: 16500 } },
+  };
+  const result = generateXR3(market, rules, period);
+  assert.ok(result.episodes.length > 0);
+  assert.ok(result.episodes.every((trade) => trade.symbol === 'GOLDBEES'));
+  assert.ok(result.decisions.every((decision) => !decision.riskOn && decision.targets.every((symbol) => symbol === 'GOLDBEES')));
+});
+
+test('XR3 rejects an entire scheduled rotation when a required open has zero volume', () => {
+  const universe = ['NIFTYBEES', 'BANKBEES', 'JUNIORBEES', 'ITBEES', 'GOLDBEES'];
+  const values = Array.from({ length: 270 }, (_, index) => 100 + index * 0.5 + Math.sin(index / 7));
+  const input = Object.fromEntries(universe.map((symbol, rank) => [symbol, rows(values.map((value, index) => value + index * rank * 0.08), '2019-01-01')]));
+  const rules = {
+    capital: 50000, universe, equityUniverse: universe.filter((symbol) => symbol !== 'GOLDBEES'),
+    strategies: { XR3: { maximumEquityHoldings: 2, defensiveSymbol: 'GOLDBEES', allocationPerSleeve: 16500 } },
+  };
+  const period = { start: '2019-08-15', end: dates(270, '2019-01-01').at(-1) };
+  const baselineMarket = prepareMarket(input, universe), baseline = generateXR3(baselineMarket, rules, period);
+  const first = baseline.decisions.find((decision) => decision.targets.length > 0);
+  const executionDate = baselineMarket.calendar[baselineMarket.calendar.indexOf(first.signalDate) + 1];
+  const target = first.targets[0], targetRow = input[target].find((row) => row.timestamp.startsWith(executionDate));
+  targetRow.volume = 0;
+  const result = generateXR3(prepareMarket(input, universe), rules, period);
+  assert.ok(result.rejectedActions.some((action) => action.date === executionDate && action.reason === 'MISSING_ROTATION_OPEN'));
+  assert.ok(!result.episodes.some((trade) => trade.entryDate === executionDate));
 });
 
 test('BO2 suppresses a breakout while NIFTYBEES is below its 200-session SMA', () => {

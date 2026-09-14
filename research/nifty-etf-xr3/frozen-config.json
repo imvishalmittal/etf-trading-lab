@@ -1,0 +1,80 @@
+{
+  "researchId": "NIFTY-ETF-XR3",
+  "frozenAt": "2026-09-14",
+  "classification": "unified_run_separate_periods_post_result_hypothesis",
+  "capital": 50000,
+  "periods": {
+    "warmupStart": "2018-01-01",
+    "discovery": ["2020-01-01", "2024-12-31"],
+    "validation": ["2025-01-01", "2025-12-31"],
+    "holdout": ["2026-01-01", "2026-09-11"]
+  },
+  "universe": ["NIFTYBEES", "BANKBEES", "JUNIORBEES", "ITBEES", "MID150BEES", "PHARMABEES", "AUTOBEES", "CPSEETF", "GOLDBEES"],
+  "equityUniverse": ["NIFTYBEES", "BANKBEES", "JUNIORBEES", "ITBEES", "MID150BEES", "PHARMABEES", "AUTOBEES", "CPSEETF"],
+  "slippageScenarios": { "normal": 2, "stress": 5, "severe": 10 },
+  "bootstrap": { "resamples": 5000, "seed": 20260914, "familyLowerConfidence": 0.95 },
+  "strategies": {
+    "XR3": {
+      "signalSchedule": "first_session_of_iso_week",
+      "marketRegimeSymbol": "NIFTYBEES",
+      "marketSmaSessions": 200,
+      "momentumSessions": 63,
+      "trendSmaSessions": 100,
+      "volatilitySessions": 20,
+      "volatilityDefinition": "population_standard_deviation_of_simple_close_returns",
+      "maximumEquityHoldings": 2,
+      "defensiveSymbol": "GOLDBEES",
+      "allocationPerSleeve": 16500
+    }
+  },
+  "gates": {
+    "discovery": {
+      "minimumEpisodes": 25,
+      "maximumRejectedActionRate": 0.02,
+      "minimumNormalNetPnl": 0,
+      "minimumNormalProfitFactor": 1.2,
+      "minimumStressNetPnl": 0,
+      "minimumStressProfitFactor": 1.05,
+      "minimumSevereNetPnl": 0,
+      "maximumDrawdown": 10000,
+      "minimumProfitableYears": 3,
+      "minimumProfitableMonthRate": 0.55,
+      "minimumBootstrapLowerMeanPnl": 0,
+      "maximumSingleYearPositiveContribution": 0.5,
+      "maximumTopWinningDecileContribution": 0.6
+    },
+    "validation": {
+      "minimumEpisodes": 5,
+      "minimumNormalNetPnl": 0,
+      "minimumNormalProfitFactor": 1.1,
+      "minimumStressNetPnl": 0,
+      "minimumSevereNetPnl": 0,
+      "maximumDrawdown": 5000,
+      "minimumProfitableMonthRate": 0.5
+    },
+    "holdout": {
+      "minimumEpisodes": 3,
+      "minimumNormalNetPnl": 0,
+      "minimumStressNetPnl": 0,
+      "minimumSevereNetPnl": 0,
+      "maximumDrawdown": 5000
+    },
+    "wholeStudy": {
+      "minimumEpisodes": 25,
+      "maximumAllocation": 50000,
+      "maximumSimultaneousPositions": 3,
+      "minimumDrawdownReductionVersusParent": 0.25
+    }
+  },
+  "controls": {
+    "parent": "XR2",
+    "benchmark": "Q0",
+    "baseConfig": "../nifty-etf-multi/frozen-config.json",
+    "parentConfig": "../nifty-etf-multi/combined/frozen-config.json"
+  },
+  "statuses": {
+    "pass": "HISTORICAL_STAGED_SUPPORT_NOT_AUTHORIZED",
+    "fail": "HISTORICAL_STAGED_REJECTED"
+  }
+}
+
