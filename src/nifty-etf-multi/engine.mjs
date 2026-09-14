@@ -293,3 +293,27 @@ export function evaluateCandidate(id, result, benchmark, observedActions, config
   const coveragePassed = tests.find((test) => test.id === 'rejected_action_rate').passed;
   return { strategyId: id, decision: !coveragePassed ? 'DATA_BLOCKED' : tests.every((test) => test.passed) ? 'PASS' : 'REJECT', tests, failed: tests.filter((test) => !test.passed).map((test) => test.id) };
 }
+
+export function evaluateOosCandidate(id, result, benchmark, observedActions, oosConfig) {
+  const normal = result.summary.normal, stress = result.summary.stress, severe = result.summary.severe, q0 = benchmark.summary.normal, g = oosConfig.gates;
+  const rejectedRate = observedActions ? result.rejectedActions.length / observedActions : 1;
+  const benchmarkAlternative = normal.netPnl > q0.netPnl || (normal.maximumDrawdown <= q0.maximumDrawdown * 0.5 && Number(normal.recoveryFactor ?? -Infinity) >= Number(q0.recoveryFactor ?? Infinity));
+  const tests = [
+    ['minimum_episodes', normal.trades >= g.minimumEpisodes, normal.trades, `>= ${g.minimumEpisodes}`],
+    ['rejected_action_rate', rejectedRate <= g.maximumRejectedActionRate, rejectedRate, `<= ${g.maximumRejectedActionRate}`],
+    ...['2025', '2026'].flatMap((year) => [
+      [`normal_${year}_net_pnl`, Number(normal.yearly[year] ?? 0) > g.minimumSliceNetPnl, normal.yearly[year] ?? 0, `> ${g.minimumSliceNetPnl}`],
+      [`stress_${year}_net_pnl`, Number(stress.yearly[year] ?? 0) > g.minimumSliceNetPnl, stress.yearly[year] ?? 0, `> ${g.minimumSliceNetPnl}`],
+      [`severe_${year}_net_pnl`, Number(severe.yearly[year] ?? 0) > g.minimumSliceNetPnl, severe.yearly[year] ?? 0, `> ${g.minimumSliceNetPnl}`],
+    ]),
+    ['combined_normal_net_pnl', normal.netPnl > g.minimumCombinedNetPnl, normal.netPnl, `> ${g.minimumCombinedNetPnl}`],
+    ['combined_stress_net_pnl', stress.netPnl > g.minimumCombinedNetPnl, stress.netPnl, `> ${g.minimumCombinedNetPnl}`],
+    ['combined_severe_net_pnl', severe.netPnl > g.minimumCombinedNetPnl, severe.netPnl, `> ${g.minimumCombinedNetPnl}`],
+    ['maximum_drawdown', normal.maximumDrawdown <= g.maximumDrawdown, normal.maximumDrawdown, `<= ${g.maximumDrawdown}`],
+    ['maximum_allocation', normal.maximumDeployedCapital <= g.maximumAllocation, normal.maximumDeployedCapital, `<= ${g.maximumAllocation}`],
+    ['maximum_positions', true, 1, `<= ${g.maximumSimultaneousPositions}`],
+    ['benchmark_relative', benchmarkAlternative, { candidateNetPnl: normal.netPnl, benchmarkNetPnl: q0.netPnl, candidateDrawdown: normal.maximumDrawdown, benchmarkDrawdown: q0.maximumDrawdown, candidateRecovery: normal.recoveryFactor, benchmarkRecovery: q0.recoveryFactor }, 'beat Q0 net P&L OR <=50% Q0 drawdown with recovery factor >= Q0'],
+  ].map(([gateId, passed, value, requirement]) => ({ id: gateId, passed: Boolean(passed), value, requirement }));
+  const coveragePassed = tests.find((test) => test.id === 'rejected_action_rate').passed;
+  return { strategyId: id, decision: !coveragePassed ? 'DATA_BLOCKED' : tests.every((test) => test.passed) ? 'SUPPORT' : 'DOES_NOT_CONFIRM', tests, failed: tests.filter((test) => !test.passed).map((test) => test.id) };
+}
