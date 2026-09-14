@@ -41,3 +41,18 @@ User-authorized post-selection OOS diagnostic for unchanged XR1 and BO1:
 - Paper/live trading: **NOT AUTHORIZED**
 
 Authoritative OOS evidence: [run 34800068186](https://github.com/imvishalmittal/etf-trading-lab/actions/runs/34800068186), artifact `10331226835`, artifact digest `sha256:8009d87f2cc35a08b6d886c80e1353d15946300af15577e896019e2075b864f7`. See [OOS results](oos/RESULTS.md).
+
+User-authorized unified-run follow-up:
+
+- Research design: **SEPARATE DISCOVERY, VALIDATION AND HOLDOUT RESULTS IN ONE WORKFLOW RUN**
+- New candidates: `XR2` diversified two-leader rotation and `BO2` breadth-confirmed breakout
+- Discovery: **2020–2024**
+- Validation: **2025**
+- Holdout/OOS: **2026 THROUGH 11 SEPTEMBER**
+- Execution: **ALL PERIODS ALWAYS CALCULATED TOGETHER; NO SEPARATE GATED RUNS**
+- Protocol: **FROZEN BEFORE XR2/BO2 CALCULATION**
+- Combined summary: **CONTEXT ONLY; CANNOT OFFSET A FAILED PERIOD**
+- Interpretation if successful: **HISTORICAL SUPPORT ONLY; PROSPECTIVE PAPER OBSERVATION STILL REQUIRED**
+- Paper/live trading: **NOT AUTHORIZED**
+
+See the [combined frozen specification](combined/FROZEN_SPEC.md).
